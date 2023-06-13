@@ -1,0 +1,31 @@
+{
+  "include": ["src/**/*.ts", "vite.config.*"],
+  "compilerOptions": {
+    "strict": true,
+    "types": ["node"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "sourceMap": false,
+    "declaration": true,
+    "alwaysStrict": true,
+    "declarationMap": true,
+    "downlevelIteration": true,
+    "importHelpers": true,
+    "inlineSources": false,
+    "isolatedModules": true,
+    "lib": ["ES2016", "DOM", "DOM.Iterable"],
+    "moduleResolution": "node",
+    "noEmitHelpers": true,
+    "noErrorTruncation": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "preserveWatchOutput": true,
+    "strictBindCallApply": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    // 不包含任何错误的时候才能进行打包
+    "noEmitOnError": true
+  }
+}
