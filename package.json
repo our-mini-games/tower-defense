@@ -20,7 +20,7 @@
     "./*": "./dist/*"
   },
   "scripts": {
-    "dev": "vite build --watch",
+    "dev": "vite --open",
     "build": "vite build",
     "prepare": "husky install",
     "prepublishOnly": "npm run build",
@@ -35,7 +35,7 @@
     "url": "git+https://github.com/our-mini-games/tower-defense.git"
   },
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=14.0.0"
   },
   "lint-staged": {
     "*.{ts,js}": "eslint --fix"

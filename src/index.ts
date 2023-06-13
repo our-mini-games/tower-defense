@@ -1,1 +1,3 @@
-export const one = 1
+const app = document.querySelector('#app')!
+
+app.textContent = 'hello world!'
