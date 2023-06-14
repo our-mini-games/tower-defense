@@ -1,4 +1,10 @@
-import { type CanvasOptions } from '../types'
+import type { CanvasOptions, Coordinate } from '../types'
+
+export abstract class GameObject {
+  protected abstract coordinate: Coordinate
+  abstract update (): unknown
+  abstract destroy (): void
+}
 
 export abstract class BaseModule {
   protected abstract data: unknown
