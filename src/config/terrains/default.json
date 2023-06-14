@@ -1,0 +1,21 @@
+{
+  "id": 1,
+  "name": "default",
+  "size": 48,
+  "layout": [
+    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "i"],
+    ["r", "x", "x", "x", "x", "x", "p", "p", "p", "p"],
+    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "p"],
+    ["p", "p", "p", "x", "x", "x", "x", "x", "r", "p"],
+    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "p"],
+    ["r", "x", "x", "x", "x", "x", "p", "p", "p", "p"],
+    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "o"]
+  ],
+  "resource": {
+    "r": "/terrains/r.svg",
+    "x": "/terrains/x.svg",
+    "p": "/terrains/p.svg",
+    "i": "/terrains/i.svg",
+    "o": "/terrains/o.svg"
+  }
+}

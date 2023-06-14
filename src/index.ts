@@ -1,3 +1,3 @@
-const app = document.querySelector('#app')!
+const app = document.querySelector<HTMLElement>('#app')!
 
-app.textContent = 'hello world!'
+console.log(app)
