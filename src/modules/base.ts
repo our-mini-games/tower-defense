@@ -27,24 +27,40 @@ export abstract class BaseCanvas extends BaseModule {
 
 export class BaseCanvasImplement extends BaseCanvas {
   protected data: unknown[] = []
-  protected target = document.createElement('canvas')
-  protected ctx = this.target.getContext('2d')!
+  #target = document.createElement('canvas')
+  #ctx = this.#target.getContext('2d')!
 
-  protected width = 100
-  protected height = 100
+  #width = 100
+  #height = 100
 
   constructor (options?: CanvasOptions) {
     super()
     if (options?.width) {
-      this.width = options.width
+      this.#width = options.width
     }
 
     if (options?.height) {
-      this.height = options.height
+      this.#height = options.height
     }
 
-    this.target.width = this.width
-    this.target.height = this.height
+    this.#target.width = this.#width
+    this.#target.height = this.#height
+  }
+
+  get target () {
+    return this.#target
+  }
+
+  get ctx () {
+    return this.#ctx
+  }
+
+  get width () {
+    return this.#width
+  }
+
+  get height () {
+    return this.#height
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
