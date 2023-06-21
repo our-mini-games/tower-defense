@@ -1,3 +1,3 @@
-import { BaseCanvasImplement } from '../base'
+import { Renderer } from '../base'
 
-export default class TechnologyPanelRenderer extends BaseCanvasImplement {}
+export default class TechnologyPanelRenderer extends Renderer {}

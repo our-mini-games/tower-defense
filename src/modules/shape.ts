@@ -16,7 +16,7 @@ export interface ShapeOptions {
   alpha?: number
 }
 
-class Shape extends BaseModule {
+export class Shape extends BaseModule {
   protected data: ImageResource[] = []
 
   type!: ShapeTypes
@@ -46,7 +46,16 @@ class Shape extends BaseModule {
     this.#switchModel()
   }
 
+  setVelocity (x: number, y: number) {
+    this.midpoint = { x, y }
+  }
+
+  // setRotate (rotate: number) {
+  //   this.rotate = rotate
+  // }
+
   draw (ctx: CanvasRenderingContext2D) {
+    ctx.beginPath()
     switch (this.type) {
       case ShapeTypes.RECTANGLE:
         this.#drawRectangle(ctx)
@@ -60,6 +69,8 @@ class Shape extends BaseModule {
       default:
         break
     }
+
+    ctx.closePath()
   }
 
   // 检测当前图形是否与参数图形相交
@@ -246,11 +257,11 @@ export class RectangleShape extends Shape {
     'fillStyle' |
     'model' |
     'alpha'
-  >) {
+  >, models: ImageResource[] = []) {
     super({
       type: ShapeTypes.RECTANGLE,
       ...options
-    })
+    }, models)
   }
 }
 
@@ -265,11 +276,11 @@ export class CircleShape extends Shape {
     'fillStyle' |
     'model' |
     'alpha'
-  >) {
+  >, models: ImageResource[] = []) {
     super({
       type: ShapeTypes.CIRCLE,
       ...options
-    })
+    }, models)
   }
 }
 
@@ -284,10 +295,10 @@ export class IrregularFigureShape extends Shape {
     'fillStyle' |
     'model' |
     'alpha'
-  >) {
+  >, models: ImageResource[] = []) {
     super({
       type: ShapeTypes.IRREGULAR_FIGURE,
       ...options
-    })
+    }, models)
   }
 }

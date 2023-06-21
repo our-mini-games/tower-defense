@@ -1,14 +1,14 @@
 import { getTerrain, type TerrainSetting } from '../../config'
 import type { CanvasOptions, Coordinate } from '../../types'
 import { loadImages } from '../../utils/tools'
-import { BaseCanvasImplement } from '../base'
+import { Renderer } from '../base'
 
 interface TerrainData extends Coordinate {
   size: number
   img: HTMLImageElement
 }
 
-export default class TerrainRenderer extends BaseCanvasImplement {
+export default class TerrainRenderer extends Renderer {
   private readonly terrainName: string
   data: TerrainData[] = []
 
@@ -38,9 +38,11 @@ export default class TerrainRenderer extends BaseCanvasImplement {
   }
 
   async formatTerrain ({ size, layout, resource }: TerrainSetting) {
-    const resources = await loadImages(Object.entries(resource).map(([name, src]) => ({
+    const resources = await loadImages(Object.values(resource).map(({ name, src, width, height }) => ({
       name,
-      src
+      src,
+      width,
+      height
     })))
 
     let row: string[]

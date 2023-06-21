@@ -17,21 +17,21 @@ export enum GameObjectTypes {
   // 塔对象
   TOWER,
   // 敌人对象
-  ENEMIES
+  ENEMY
 }
 
 // 渲染器类型
 export enum RendererTypes {
   // 主游戏渲染
-  MAIN = 'MAIN',
+  MAIN = 'Main',
   // 地型绘制
-  TERRAIN = 'TERRAIN',
+  TERRAIN = 'Terrain',
   // 控制面板
-  CONTROL_PANEL = 'CONTROL_PANEL',
+  CONTROL_PANEL = 'controlPanel',
   // 统计面板
-  STATISTICS_PANEL = 'STATISTICS_PANEL',
+  STATISTICS_PANEL = 'StatisticsPanel',
   // 科技面板
-  TECHNOLOGY_PANEL = 'TECHNOLOGY_PANEL'
+  TECHNOLOGY_PANEL = 'TechnologyPanel'
 }
 
 export enum ShapeTypes {

@@ -12,10 +12,35 @@
     ["r", "r", "r", "r", "r", "r", "r", "r", "r", "o"]
   ],
   "resource": {
-    "r": "/terrains/r.svg",
-    "x": "/terrains/x.svg",
-    "p": "/terrains/p.svg",
-    "i": "/terrains/i.svg",
-    "o": "/terrains/o.svg"
+    "r": {
+      "name": "r",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/r.svg"
+    },
+    "x": {
+      "name": "x",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/x.svg"
+    },
+    "p": {
+      "name": "p",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/p.svg"
+    },
+    "i": {
+      "name": "i",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/i.svg"
+    },
+    "o": {
+      "name": "o",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/o.svg"
+    }
   }
 }

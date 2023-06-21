@@ -49,6 +49,10 @@ export const calcOverlapArea = ({
   return overlapArea / (area1 + area2 - overlapArea)
 }
 
+export const createRandomId = (suffix = '') => {
+  return `${suffix}${new Date().getTime()}${Math.random().toString().substring(2, 6)}`
+}
+
 export const loadImages = async (resources: Resource[]) => {
   try {
     return await Promise.all(resources.map(resource => loadImage(resource)))

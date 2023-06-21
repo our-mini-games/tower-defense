@@ -1,15 +1,23 @@
-import type { CanvasOptions, Coordinate } from '../types'
+// import type { GameObjectTypes } from '../config'
+import type { CanvasOptions } from '../types'
+// import type { Action } from './action'
+// import type { Shape } from './shape'
 
-export abstract class GameObject {
-  protected abstract coordinate: Coordinate
-  abstract update (): unknown
-  abstract destroy (): void
-}
+// export abstract class GameObject {
+//   abstract type: GameObjectTypes
+//   abstract shape: Shape
+//   protected abstract triggerIds: Set<string>
+//   protected abstract actions: Map<string, Action>
+//   protected abstract parentNode: Node
+
+//   abstract update (): unknown
+//   abstract destroy (): void
+// }
 
 export abstract class BaseModule {
   protected abstract data: unknown
-  abstract init (): void
-  abstract update (): unknown
+  abstract init (...args: unknown[]): void
+  abstract update (...args: unknown[]): unknown
 }
 
 export abstract class BaseCanvas extends BaseModule {
@@ -25,7 +33,7 @@ export abstract class BaseCanvas extends BaseModule {
   abstract mount (...args: unknown[]): void
 }
 
-export class BaseCanvasImplement extends BaseCanvas {
+export class Renderer extends BaseCanvas {
   protected data: unknown[] = []
   #target = document.createElement('canvas')
   #ctx = this.#target.getContext('2d')!
@@ -64,14 +72,13 @@ export class BaseCanvasImplement extends BaseCanvas {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  init () {}
+  init (..._args: unknown[]) {}
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  update () {}
+  update (..._args: unknown[]) {}
 
-  draw () {
-    this.ctx.fillRect(0, 0, this.width, this.height)
-  }
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  draw (..._args: unknown[]) {}
 
   clear () {
     this.ctx.clearRect(0, 0, this.width, this.height)
