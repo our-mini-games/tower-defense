@@ -26,6 +26,7 @@ export class Tower extends GameObject {
   }
 
   protected coordinate: Coordinate
+
   destroy (): void {
     // ...
   }

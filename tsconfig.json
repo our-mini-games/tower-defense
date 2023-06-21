@@ -12,7 +12,7 @@
     "downlevelIteration": true,
     "importHelpers": true,
     "inlineSources": false,
-    "isolatedModules": true,
+    "isolatedModules": false,
     "lib": ["ES2016", "DOM", "DOM.Iterable"],
     "moduleResolution": "node",
     "noEmitHelpers": true,
