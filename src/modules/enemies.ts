@@ -1,40 +1,46 @@
-import { BaseModule, GameObject } from "./base"
-import { Coordinate } from "../types"
+import { type Coordinate } from '../types'
+import { BaseModule, GameObject } from './base'
 
 export class Enemies extends BaseModule {
-  data: Enemy[] = new Array()
-  constructor() {
+  data: Enemy[] = []
+  constructor () {
     super()
     this.init()
   }
-  init() {
 
+  init () {
+    //
   }
-  update() {
-    for (let enemy of this.data) {
+
+  update () {
+    for (const enemy of this.data) {
       enemy.update()
     }
   }
 }
 
 export class Enemy extends GameObject {
-  constructor(coordinate: Coordinate = { x: 0, y: 0 }) {
+  constructor (coordinate: Coordinate = { x: 0, y: 0 }) {
     super()
     this.coordinate = coordinate
   }
+
   protected coordinate: Coordinate
   protected velocity: Coordinate = { x: 0, y: 0 }
-  protected rotate: number = 0
-  destory(): void {
+  protected rotate = 0
+  destroy (): void {
     // ...
   }
-  update(): unknown {
+
+  update (): unknown {
     return this.coordinate
   }
-  setVelocity(velocity: Coordinate): void {
+
+  setVelocity (velocity: Coordinate): void {
     this.velocity = velocity
   }
-  setRotate(rotate: number) {
+
+  setRotate (rotate: number) {
     this.rotate = rotate
   }
 }

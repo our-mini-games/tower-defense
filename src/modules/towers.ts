@@ -1,35 +1,40 @@
-import { BaseModule, GameObject } from "./base"
-import { Coordinate } from "../types"
+import type { Coordinate } from '../types'
+import { BaseModule, GameObject } from './base'
 
 export class Towers extends BaseModule {
-  data: Tower[] = new Array()
-  constructor() {
+  data: Tower[] = []
+  constructor () {
     super()
     this.init()
   }
-  init() {
 
+  init () {
+    //
   }
-  update() {
-    for (let tower of this.data) {
+
+  update () {
+    for (const tower of this.data) {
       tower.update()
     }
   }
 }
 
 export class Tower extends GameObject {
-  constructor(coordinate: Coordinate = { x: 0, y: 0 }) {
+  constructor (coordinate: Coordinate = { x: 0, y: 0 }) {
     super()
     this.coordinate = coordinate
   }
+
   protected coordinate: Coordinate
-  destory(): void {
+  destroy (): void {
     // ...
   }
-  update(): unknown {
+
+  update (): unknown {
     return this.coordinate
   }
-  fire() {
+
+  fire () {
     // ...
   }
 }
