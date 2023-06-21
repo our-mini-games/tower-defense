@@ -9,7 +9,7 @@ export class Bullets extends BaseModule {
   }
 
   init () {
-    // ...
+    //
   }
 
   update () {
@@ -28,7 +28,8 @@ export class Bullet extends GameObject {
   protected coordinate: Coordinate
   protected velocity?: Coordinate | undefined
   protected rotate = 0
-  destory (): void {
+
+  destroy (): void {
     // ...
   }
 

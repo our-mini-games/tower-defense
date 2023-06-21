@@ -1,0 +1,46 @@
+{
+  "id": 1,
+  "name": "default",
+  "size": 48,
+  "layout": [
+    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "i"],
+    ["r", "x", "x", "x", "x", "x", "p", "p", "p", "p"],
+    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "p"],
+    ["p", "p", "p", "x", "x", "x", "x", "x", "r", "p"],
+    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "p"],
+    ["r", "x", "x", "x", "x", "x", "p", "p", "p", "p"],
+    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "o"]
+  ],
+  "resource": {
+    "r": {
+      "name": "r",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/r.svg"
+    },
+    "x": {
+      "name": "x",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/x.svg"
+    },
+    "p": {
+      "name": "p",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/p.svg"
+    },
+    "i": {
+      "name": "i",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/i.svg"
+    },
+    "o": {
+      "name": "o",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/o.svg"
+    }
+  }
+}

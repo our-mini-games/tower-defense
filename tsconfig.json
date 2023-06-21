@@ -1,5 +1,5 @@
 {
-  "include": ["src/**/*.ts", "vite.config.*"],
+  "include": ["src/**/*.ts", "src/**/*.json", "vite.config.*"],
   "compilerOptions": {
     "strict": true,
     "types": ["node"],
@@ -26,6 +26,8 @@
     "strictNullChecks": true,
     "noImplicitAny": true,
     // 不包含任何错误的时候才能进行打包
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
   }
 }

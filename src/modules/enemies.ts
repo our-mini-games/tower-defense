@@ -9,7 +9,7 @@ export class Enemies extends BaseModule {
   }
 
   init () {
-    // ...
+    //
   }
 
   update () {
@@ -28,7 +28,8 @@ export class Enemy extends GameObject {
   protected coordinate: Coordinate
   protected velocity: Coordinate = { x: 0, y: 0 }
   protected rotate = 0
-  destory (): void {
+
+  destroy (): void {
     // ...
   }
 

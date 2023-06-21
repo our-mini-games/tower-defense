@@ -1,4 +1,4 @@
-import { type Coordinate } from '../types'
+import type { Coordinate } from '../types'
 import { BaseModule, GameObject } from './base'
 
 export class Towers extends BaseModule {
@@ -9,7 +9,7 @@ export class Towers extends BaseModule {
   }
 
   init () {
-    // ...
+    //
   }
 
   update () {
@@ -26,7 +26,8 @@ export class Tower extends GameObject {
   }
 
   protected coordinate: Coordinate
-  destory (): void {
+
+  destroy (): void {
     // ...
   }
 
