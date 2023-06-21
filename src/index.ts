@@ -1,3 +1,3 @@
-const app = document.querySelector('#app')!
+const app = document.querySelector('#app') as Element
 
 app.textContent = 'hello world!'
