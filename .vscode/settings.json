@@ -1,13 +1,7 @@
 {
+  "editor.formatOnSave": false,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
   },
-  "cSpell.words": [
-    "antfu",
-    "bumpp",
-    "commitlint",
-    "esno",
-    "pnpx",
-    "vitepress"
-  ]
+  "cSpell.words": ["antfu", "bumpp", "commitlint", "esno", "pnpx", "vitepress"]
 }
