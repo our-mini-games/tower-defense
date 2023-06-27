@@ -50,7 +50,7 @@ export const calcOverlapArea = ({
 }
 
 export const createRandomId = (suffix = '') => {
-  return `${suffix}${new Date().getTime()}${Math.random().toString().substring(2, 6)}`
+  return `${suffix ? `${suffix}_` : ''}${new Date().getTime()}${Math.random().toString().substring(2, 6)}`
 }
 
 export const loadImages = async (resources: Resource[]) => {

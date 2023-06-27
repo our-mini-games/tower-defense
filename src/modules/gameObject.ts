@@ -4,17 +4,40 @@
 
 import { type ActionTypes, GameObjectTypes, ShapeTypes } from '../config'
 import type { Coordinate, ImageResource } from '../types'
+import { createRandomId } from '../utils/tools'
 import type { Action } from './action'
 import { BaseModule } from './base'
 import { RectangleShape, Shape, type ShapeOptions } from './shape'
 import type { Trigger } from './trigger'
 
 export interface GameObjectOptions {
+  id?: string
   type: GameObjectTypes
   shape: Shape
 }
 
+export interface PointGameObjectOptions extends Partial<Pick<GameObject, 'id'>> {
+  point: Coordinate
+}
+
+export interface AreaGameObjectOptions extends Partial<Pick<GameObject, 'id'>> {
+  shapeOptions: Omit<ShapeOptions, 'type'>
+  models?: ImageResource[]
+}
+
+export interface TowerGameObjectOptions extends Partial<Pick<GameObject, 'id'>> {
+  shapeOptions: Omit<ShapeOptions, 'type'>
+  models?: ImageResource[]
+}
+
+export interface EnemyGameObjectOptions extends Partial<Pick<GameObject, 'id'>> {
+  shapeOptions: Omit<ShapeOptions, 'type'>
+  models?: ImageResource[]
+}
+
 export class GameObject extends BaseModule {
+  id = createRandomId('GameObject')
+
   type = GameObjectTypes.DEFAULT
   shape!: Shape
   data = []
@@ -29,25 +52,29 @@ export class GameObject extends BaseModule {
 
     super()
     Object.assign(this, options)
+
+    if (options.id) {
+      this.id = options.id
+    }
   }
 
   static create (type: GameObjectTypes.GLOBAL): GameObject
-  static create (type: GameObjectTypes.POINT, point: Coordinate): GameObject
-  static create (type: GameObjectTypes.AREA, shapeOptions: ShapeOptions, models?: ImageResource[]): GameObject
-  static create (type: GameObjectTypes.TOWER, shapeOptions: ShapeOptions, models?: ImageResource[]): GameObject
-  static create (type: GameObjectTypes.ENEMY, shapeOptions: ShapeOptions, models?: ImageResource[]): GameObject
+  static create (type: GameObjectTypes.POINT, pointObjectOptions: PointGameObjectOptions): GameObject
+  static create (type: GameObjectTypes.AREA, areaObjectOptions: AreaGameObjectOptions): GameObject
+  static create (type: GameObjectTypes.TOWER, towerObjectOptions: TowerGameObjectOptions): GameObject
+  static create (type: GameObjectTypes.ENEMY, enemyObjectOptions: EnemyGameObjectOptions): GameObject
   static create (type: GameObjectTypes, ...args: unknown[]): GameObject | null {
     switch (type) {
       case GameObjectTypes.GLOBAL:
         return new GlobalGameObject()
       case GameObjectTypes.POINT:
-        return new PointGameObject(args[0] as Coordinate)
+        return new PointGameObject(args[0] as PointGameObjectOptions)
       case GameObjectTypes.AREA:
-        return new AreaGameObject(args[0] as ShapeOptions, args[1] as ImageResource[])
+        return new AreaGameObject(args[0] as AreaGameObjectOptions)
       case GameObjectTypes.TOWER:
-        return new TowerGameObject(args[0] as ShapeOptions, args[1] as ImageResource[])
+        return new TowerGameObject(args[0] as TowerGameObjectOptions)
       case GameObjectTypes.ENEMY:
-        return new EnemyGameObject(args[0] as ShapeOptions, args[1] as ImageResource[])
+        return new EnemyGameObject(args[0] as EnemyGameObjectOptions)
       default:
         return null
     }
@@ -56,6 +83,7 @@ export class GameObject extends BaseModule {
   init (parentCollection: Map<string, GameObject>) {
     if (parentCollection) {
       this.parentCollection = parentCollection
+      parentCollection.set(this.id, this)
     }
     this.update()
   }
@@ -126,14 +154,14 @@ export class GameObject extends BaseModule {
     /**
      * @todo - 需要计算速度
      */
-    const speed = 10
+    const speed = 2
 
     if (x1 === x2 && y1 === y2) {
       return
     }
 
     if (x1 === x2) {
-      this.shape.setVelocity(
+      this.shape.setMidpoint(
         x1,
         y1 > y2
           ? Math.max(y2, y1 - speed)
@@ -144,7 +172,7 @@ export class GameObject extends BaseModule {
     }
 
     if (y1 === y2) {
-      this.shape.setVelocity(
+      this.shape.setMidpoint(
         x1 > x2
           ? Math.max(x2, x1 - speed)
           : Math.min(x2, x1 + speed),
@@ -154,7 +182,7 @@ export class GameObject extends BaseModule {
       return
     }
 
-    this.shape.setVelocity(
+    this.shape.setMidpoint(
       x1 > x2
         ? Math.max(x2, x1 - speed)
         : Math.min(x2, x1 + speed),
@@ -163,10 +191,16 @@ export class GameObject extends BaseModule {
         : Math.min(y2, y1 + speed)
     )
   }
+
+  static isEnemy (gameObject: GameObject) {
+    return gameObject.type === GameObjectTypes.ENEMY
+  }
 }
 
 // 全局对象
 export class GlobalGameObject extends GameObject {
+  id = createRandomId('GlobalGameObject')
+
   constructor () {
     super({
       type: GameObjectTypes.GLOBAL,
@@ -182,7 +216,12 @@ export class GlobalGameObject extends GameObject {
 
 // 点对象（坐标对象）
 export class PointGameObject extends GameObject {
-  constructor (point: Coordinate) {
+  id = createRandomId('PointGameObject')
+
+  constructor ({
+    id,
+    point
+  }: PointGameObjectOptions) {
     super({
       type: GameObjectTypes.POINT,
       shape: new Shape({
@@ -192,35 +231,69 @@ export class PointGameObject extends GameObject {
         midpoint: point
       })
     })
+
+    if (id) {
+      this.id = id
+    }
   }
 }
 
 // 区域对象
 export class AreaGameObject extends GameObject {
-  constructor (options: Omit<ShapeOptions, 'type'>, models: ImageResource[] = []) {
+  id = createRandomId('AreaGameObject')
+
+  constructor ({
+    id,
+    shapeOptions,
+    models = []
+  }: AreaGameObjectOptions) {
     super({
       type: GameObjectTypes.AREA,
-      shape: new RectangleShape(options, models)
+      shape: new RectangleShape(shapeOptions, models)
     })
+
+    if (id) {
+      this.id = id
+    }
   }
 }
 
 // 塔对象
 export class TowerGameObject extends GameObject {
-  constructor (options: Omit<ShapeOptions, 'type'>, models: ImageResource[] = []) {
+  id = createRandomId('TowerGameObject')
+
+  constructor ({
+    id,
+    shapeOptions,
+    models = []
+  }: TowerGameObjectOptions) {
     super({
       type: GameObjectTypes.TOWER,
-      shape: new RectangleShape(options, models)
+      shape: new RectangleShape(shapeOptions, models)
     })
+
+    if (id) {
+      this.id = id
+    }
   }
 }
 
 // 敌人对象
 export class EnemyGameObject extends GameObject {
-  constructor (options: ShapeOptions, models: ImageResource[] = []) {
+  id = createRandomId('EnemyGameObject')
+
+  constructor ({
+    id,
+    shapeOptions,
+    models = []
+  }: EnemyGameObjectOptions) {
     super({
       type: GameObjectTypes.ENEMY,
-      shape: new RectangleShape(options, models)
+      shape: new RectangleShape(shapeOptions, models)
     })
+
+    if (id) {
+      this.id = id
+    }
   }
 }

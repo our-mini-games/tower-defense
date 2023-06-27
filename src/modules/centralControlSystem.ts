@@ -4,10 +4,10 @@
 
 import { ActionTypes, GameObjectTypes, RendererTypes, ShapeTypes } from '../config'
 import { type ImageResource } from '../types'
-import { createRandomId, loadImage } from '../utils/tools'
-import { Action } from './action'
+import { loadImage } from '../utils/tools'
+import { Action, IntervalAction } from './action'
 import { BaseModule, type Renderer } from './base'
-import { AreaGameObject, type GameObject, GlobalGameObject } from './gameObject'
+import { GameObject } from './gameObject'
 import { Trigger } from './trigger'
 
 export class CentralControlSystem extends BaseModule {
@@ -21,10 +21,7 @@ export class CentralControlSystem extends BaseModule {
 
   /** 游戏时间 */
   elapseTime = 0
-  /** 真实时间 */
-  actualTime = new Date().getTime()
 
-  fps = 60
   requestId = 0
 
   constructor (el: string | HTMLElement) {
@@ -33,6 +30,11 @@ export class CentralControlSystem extends BaseModule {
     this.el = typeof el === 'string'
       ? document.querySelector(el)!
       : el
+  }
+
+  /** 真实时间 */
+  get actualTime () {
+    return new Date().getTime()
   }
 
   /**
@@ -150,71 +152,51 @@ export class CentralControlSystem extends BaseModule {
   }
 
   async loadGameObjects () {
+    const { gameObjects } = this
+
     const size = 48
     const x = 10
     const y = 7
 
-    const globalGameObject = new GlobalGameObject()
-
-    const inputArea = new AreaGameObject({
-      midpoint: { x: size * x - size / 2, y: size / 2 },
-      width: size,
-      height: size
+    ;[
+      GameObject.create(GameObjectTypes.GLOBAL),
+      GameObject.create(GameObjectTypes.AREA, {
+        id: 'inputArea',
+        shapeOptions: {
+          midpoint: { x: size * x - size / 2, y: size / 2 },
+          width: size,
+          height: size
+        }
+      }),
+      ...[
+        { x: size / 2, y: size / 2 },
+        { x: size / 2, y: size * 3 - size / 2 },
+        { x: size * (x - 1) - size / 2, y: size * 3 - size / 2 },
+        { x: size * (x - 1) - size / 2, y: size * 5 - size / 2 },
+        { x: size / 2, y: size * 5 - size / 2 },
+        { x: size / 2, y: size * 7 - size / 2 }
+      ].map((midpoint, index) => {
+        return GameObject.create(GameObjectTypes.AREA, {
+          id: `inflectionPoint${index + 1}`,
+          shapeOptions: {
+            midpoint,
+            width: size,
+            height: size
+          }
+        })
+      }),
+      GameObject.create(GameObjectTypes.AREA, {
+        id: 'destinationArea',
+        shapeOptions: {
+          midpoint: { x: size * x - size / 2, y: size * y - size / 2 },
+          width: size,
+          height: size,
+          fillStyle: 'red'
+        }
+      })
+    ].forEach(gameObject => {
+      gameObject.init(gameObjects)
     })
-
-    const inflectionPoint1 = new AreaGameObject({
-      midpoint: { x: size / 2, y: size / 2 },
-      width: size,
-      height: size
-    })
-
-    const inflectionPoint2 = new AreaGameObject({
-      midpoint: { x: size / 2, y: size * 3 - size / 2 },
-      width: size,
-      height: size
-    })
-
-    const inflectionPoint3 = new AreaGameObject({
-      midpoint: { x: size * (x - 1) - size / 2, y: size * 3 - size / 2 },
-      width: size,
-      height: size
-    })
-
-    const inflectionPoint4 = new AreaGameObject({
-      midpoint: { x: size * (x - 1) - size / 2, y: size * 5 - size / 2 },
-      width: size,
-      height: size
-    })
-
-    const inflectionPoint5 = new AreaGameObject({
-      midpoint: { x: size / 2, y: size * 5 - size / 2 },
-      width: size,
-      height: size
-    })
-
-    const inflectionPoint6 = new AreaGameObject({
-      midpoint: { x: size / 2, y: size * 7 - size / 2 },
-      width: size,
-      height: size
-    })
-
-    const outputArea = new AreaGameObject({
-      midpoint: { x: size * x - size / 2, y: size * y - size / 2 },
-      width: size,
-      height: size
-    })
-
-    const { gameObjects } = this
-
-    gameObjects.set('globalGameObject', globalGameObject)
-    gameObjects.set('inputArea', inputArea)
-    gameObjects.set('inflectionPoint1', inflectionPoint1)
-    gameObjects.set('inflectionPoint2', inflectionPoint2)
-    gameObjects.set('inflectionPoint3', inflectionPoint3)
-    gameObjects.set('inflectionPoint4', inflectionPoint4)
-    gameObjects.set('inflectionPoint5', inflectionPoint5)
-    gameObjects.set('inflectionPoint6', inflectionPoint6)
-    gameObjects.set('outputArea', outputArea)
   }
 
   // @todo - 临时传递个模型来测试
@@ -222,15 +204,16 @@ export class CentralControlSystem extends BaseModule {
     const { triggers, gameObjects } = this
 
     const inputArea = gameObjects.get('inputArea')!
+    const destinationArea = gameObjects.get('destinationArea')!
 
-    const sendTrigger = new Trigger({
+    triggers.add(new Trigger({
       id: 'Send_Trigger',
       conditions: [
-        source => source === inputArea,
-        (_, trigger) => (trigger as Trigger).isTimeout(1000)
+        source => source === inputArea
       ],
       actions: [
-        new Action<ActionTypes.CREATE>({
+        new IntervalAction<ActionTypes.CREATE>({
+          interval: 1000,
           type: ActionTypes.CREATE,
           source: inputArea,
           target: {
@@ -238,60 +221,41 @@ export class CentralControlSystem extends BaseModule {
             shapeOptions: {
               type: ShapeTypes.CIRCLE,
               midpoint: { ...inputArea.shape.midpoint },
-              width: 48,
-              height: 48,
-              radius: 24
+              width: 24,
+              height: 24,
+              radius: 12,
+              fillStyle: 'orange'
             },
             models: [enemyModel]
           },
           callback: (gameObject: GameObject) => {
-            this.gameObjects.set(createRandomId('GameObject_'), gameObject)
             gameObject.init(this.gameObjects)
-
-            inputArea.unbindTrigger(sendTrigger.id)
-            inputArea.unloadAction(ActionTypes.CREATE)
           }
         })
       ]
-    })
-
-    triggers.add(sendTrigger)
-
-    triggers.add(
-      new Trigger({
-        conditions: [
-          source => (source as GameObject)?.type === GameObjectTypes.ENEMY,
-          source => (source as GameObject).shape.isEntered(inputArea.shape)
-        ],
-        actions: [
-          new Action({
-            type: ActionTypes.MOVE_TO,
-            target: gameObjects.get('inflectionPoint1')
-          })
-        ]
-      })
-    )
+    }))
 
     ;([
-      gameObjects.get('inflectionPoint1'),
-      gameObjects.get('inflectionPoint2'),
-      gameObjects.get('inflectionPoint3'),
-      gameObjects.get('inflectionPoint4'),
-      gameObjects.get('inflectionPoint5'),
-      gameObjects.get('inflectionPoint6')
-    ]).forEach((area, index, points) => {
+      inputArea,
+      gameObjects.get('inflectionPoint1')!,
+      gameObjects.get('inflectionPoint2')!,
+      gameObjects.get('inflectionPoint3')!,
+      gameObjects.get('inflectionPoint4')!,
+      gameObjects.get('inflectionPoint5')!,
+      gameObjects.get('inflectionPoint6')!
+    ]).forEach((area, index, sourceAreas) => {
       triggers.add(
         new Trigger({
           conditions: [
-            source => (source as GameObject).type === GameObjectTypes.ENEMY,
-            source => (source as GameObject).shape.isEntered(area!.shape)
+            source => GameObject.isEnemy(source as GameObject),
+            source => (source as GameObject).shape.isEntered(area.shape)
           ],
           actions: [
             new Action({
               type: ActionTypes.MOVE_TO,
-              target: points.length - 1 === index
-                ? gameObjects.get('outputArea')
-                : points[index + 1]
+              target: sourceAreas.length - 1 === index
+                ? destinationArea
+                : sourceAreas[index + 1]
             })
           ]
         })
@@ -302,7 +266,7 @@ export class CentralControlSystem extends BaseModule {
       new Trigger({
         conditions: [
           source => (source as GameObject).type === GameObjectTypes.ENEMY,
-          source => (source as GameObject).shape.isEntered(gameObjects.get('outputArea')!.shape)
+          source => (source as GameObject).shape.isEntered(destinationArea.shape)
         ],
         actions: [
           new Action({ type: ActionTypes.DESTROY })
@@ -314,12 +278,7 @@ export class CentralControlSystem extends BaseModule {
   run () {
     this.requestId = requestAnimationFrame(this.run.bind(this))
 
-    const currentTime = new Date().getTime()
-
-    if (currentTime - this.actualTime >= this.fps) {
-      this.update()
-      this.actualTime = currentTime
-    }
+    this.update()
   }
 
   pause () {
