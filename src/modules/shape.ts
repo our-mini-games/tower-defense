@@ -36,6 +36,10 @@ export class Shape extends BaseModule {
     super()
     Object.assign(this, options)
     this.data = models
+
+    if (options.type === ShapeTypes.CIRCLE && options.radius) {
+      this.width = this.height = options.radius * 2
+    }
   }
 
   init () {
@@ -46,7 +50,7 @@ export class Shape extends BaseModule {
     this.#switchModel()
   }
 
-  setVelocity (x: number, y: number) {
+  setMidpoint (x: number, y: number) {
     this.midpoint = { x, y }
   }
 
@@ -74,29 +78,38 @@ export class Shape extends BaseModule {
   }
 
   // 检测当前图形是否与参数图形相交
-  isEntered (shape: Shape) {
+  isEntered (targetShape: Shape) {
     const {
-      midpoint: { x: x1, y: y1 },
-      width: w1,
-      height: h1
+      midpoint: { x: x1, y: y1 }
     } = this
     const {
-      midpoint: { x: x2, y: y2 },
-      width: w2,
-      height: h2
-    } = shape
+      midpoint: { x: x2, y: y2 }
+    } = targetShape
 
-    return (
-      x1 >= x2 &&
-      y1 >= y2 &&
-      (x1 + w1) <= (x2 + w2) &&
-      (y1 + h1) <= (y2 + h2)
-    ) || (
-      x2 >= x1 &&
-      y2 >= y1 &&
-      (x2 + w2) <= (x1 + w1) &&
-      (y2 + h2) <= (y1 + h1)
-    )
+    return Math.abs(x1 - x2) <= 2 && Math.abs(y1 - y2) <= 2
+
+    // const {
+    //   midpoint: { x: x1, y: y1 },
+    //   width: w1,
+    //   height: h1
+    // } = this
+    // const {
+    //   midpoint: { x: x2, y: y2 },
+    //   width: w2,
+    //   height: h2
+    // } = targetShape
+
+    // return (
+    //   x1 >= x2 &&
+    //   y1 >= y2 &&
+    //   (x1 + w1) <= (x2 + w2) &&
+    //   (y1 + h1) <= (y2 + h2)
+    // ) || (
+    //   x2 >= x1 &&
+    //   y2 >= y1 &&
+    //   (x2 + w2) <= (x1 + w1) &&
+    //   (y2 + h2) <= (y1 + h1)
+    // )
   }
 
   #drawRectangle (ctx: CanvasRenderingContext2D) {

@@ -28,8 +28,13 @@ export interface ActionOptions<T extends ActionTypes | unknown = unknown> {
   callback?: ActionCallback
 }
 
+export interface IntervalActionOptions<T extends ActionTypes | unknown = unknown> extends ActionOptions<T> {
+  interval: number
+  immediate?: boolean
+}
+
 export class Action<T extends ActionTypes | unknown = unknown> {
-  id = createRandomId('Action_')
+  id = createRandomId('Action')
 
   type!: ActionTypes
   source?: GameObject
@@ -41,7 +46,13 @@ export class Action<T extends ActionTypes | unknown = unknown> {
     Object.assign(this, options)
   }
 
+  execCheck (): boolean {
+    return true
+  }
+
   exec (source?: GameObject) {
+    if (!this.execCheck()) return
+
     if (source) {
       this.source = source
     }
@@ -62,7 +73,7 @@ export class Action<T extends ActionTypes | unknown = unknown> {
           const { type, shapeOptions } = this.target as unknown as CreateTarget
           const gameObject = GameObject.create(
             type as GameObjectTypes.ENEMY,
-            shapeOptions
+            { shapeOptions }
           )
 
           this.callback?.(gameObject, this)
@@ -71,5 +82,37 @@ export class Action<T extends ActionTypes | unknown = unknown> {
       default:
         break
     }
+  }
+}
+
+/**
+ * Interval Action
+ */
+export class IntervalAction<T extends ActionTypes | unknown = unknown> extends Action<T> {
+  protected interval = 0
+  protected immediate = false
+  protected lastTime = new Date().getTime()
+
+  constructor ({ interval, immediate, ...actionOptions }: IntervalActionOptions<T>) {
+    super(actionOptions)
+
+    this.interval = interval
+    this.immediate = !!immediate
+
+    if (immediate) {
+      this.lastTime = -Infinity
+    }
+  }
+
+  execCheck () {
+    const currentTime = new Date().getTime()
+
+    if (currentTime - this.lastTime > this.interval) {
+      this.lastTime = currentTime
+
+      return true
+    }
+
+    return false
   }
 }
