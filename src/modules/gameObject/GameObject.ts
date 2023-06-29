@@ -9,13 +9,15 @@ import type { Action } from '../action'
 import { BaseModule } from '../base'
 import { RectangleShape, Shape, type ShapeOptions } from '../shape'
 import type { Trigger } from '../trigger'
+import { BulletGameObject, type BulletGameObjectOptions } from './Bullet'
 import { EnemyGameObject, type EnemyGameObjectOptions } from './Enemy'
+import { SkillGameObject, type SkillGameObjectOptions } from './Skill'
 import { TowerGameObject, type TowerGameObjectOptions } from './Tower'
 
 export interface GameObjectOptions {
   id?: string
   type: GameObjectTypes
-  shape: Shape
+  shape?: Shape
 }
 
 export interface PointGameObjectOptions {
@@ -57,6 +59,8 @@ export class GameObject extends BaseModule {
   static create (type: GameObjectTypes.AREA, areaObjectOptions: AreaGameObjectOptions): GameObject
   static create (type: GameObjectTypes.TOWER, towerObjectOptions: TowerGameObjectOptions): GameObject
   static create (type: GameObjectTypes.ENEMY, enemyObjectOptions: EnemyGameObjectOptions): GameObject
+  static create (type: GameObjectTypes.SKILL, skillObjectOptions: SkillGameObjectOptions): GameObject
+  static create (type: GameObjectTypes.BULLET, bulletObjectOptions: BulletGameObjectOptions): GameObject
   static create (type: GameObjectTypes, ...args: unknown[]): GameObject | null {
     switch (type) {
       case GameObjectTypes.GLOBAL:
@@ -69,6 +73,10 @@ export class GameObject extends BaseModule {
         return new TowerGameObject(args[0] as TowerGameObjectOptions)
       case GameObjectTypes.ENEMY:
         return new EnemyGameObject(args[0] as EnemyGameObjectOptions)
+      case GameObjectTypes.SKILL:
+        return new SkillGameObject(args[0] as SkillGameObjectOptions)
+      case GameObjectTypes.BULLET:
+        return new BulletGameObject(args[0] as BulletGameObjectOptions)
       default:
         return null
     }
