@@ -4,14 +4,14 @@ import { createRandomId } from '../../utils/tools'
 import { RectangleShape, type ShapeOptions } from '../shape'
 import { GameObject } from './GameObject'
 
-export interface EnemyGameObjectOptions {
+export interface EnemyGameObjectOptions {.
   id?: string
   shapeOptions: Omit<ShapeOptions, 'type'>
   models?: ImageResource[]
 }
 
 export class EnemyGameObject extends GameObject {
-  id = createRandomId('EnemyGameObject')
+  id: string
 
   constructor ({
     id,
@@ -24,7 +24,7 @@ export class EnemyGameObject extends GameObject {
     })
 
     if (id) {
-      this.id = id
+      this.id = id || createRandomId('EnemyGameObject')
     }
   }
 }
