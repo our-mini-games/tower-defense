@@ -2,13 +2,15 @@
  * 游戏对象模块
  */
 
-import { type ActionTypes, GameObjectTypes, ShapeTypes } from '../config'
-import type { Coordinate, ImageResource } from '../types'
-import { createRandomId } from '../utils/tools'
-import type { Action } from './action'
-import { BaseModule } from './base'
-import { RectangleShape, Shape, type ShapeOptions } from './shape'
-import type { Trigger } from './trigger'
+import { type ActionTypes, GameObjectTypes, ShapeTypes } from '../../config'
+import type { Coordinate, ImageResource } from '../../types'
+import { createRandomId } from '../../utils/tools'
+import type { Action } from '../action'
+import { BaseModule } from '../base'
+import { RectangleShape, Shape, type ShapeOptions } from '../shape'
+import type { Trigger } from '../trigger'
+import { EnemyGameObject, type EnemyGameObjectOptions } from './Enemy'
+import { TowerGameObject, type TowerGameObjectOptions } from './Tower'
 
 export interface GameObjectOptions {
   id?: string
@@ -16,21 +18,13 @@ export interface GameObjectOptions {
   shape: Shape
 }
 
-export interface PointGameObjectOptions extends Partial<Pick<GameObject, 'id'>> {
+export interface PointGameObjectOptions {
+  id?: string
   point: Coordinate
 }
 
-export interface AreaGameObjectOptions extends Partial<Pick<GameObject, 'id'>> {
-  shapeOptions: Omit<ShapeOptions, 'type'>
-  models?: ImageResource[]
-}
-
-export interface TowerGameObjectOptions extends Partial<Pick<GameObject, 'id'>> {
-  shapeOptions: Omit<ShapeOptions, 'type'>
-  models?: ImageResource[]
-}
-
-export interface EnemyGameObjectOptions extends Partial<Pick<GameObject, 'id'>> {
+export interface AreaGameObjectOptions {
+  id?: string
   shapeOptions: Omit<ShapeOptions, 'type'>
   models?: ImageResource[]
 }
@@ -249,46 +243,6 @@ export class AreaGameObject extends GameObject {
   }: AreaGameObjectOptions) {
     super({
       type: GameObjectTypes.AREA,
-      shape: new RectangleShape(shapeOptions, models)
-    })
-
-    if (id) {
-      this.id = id
-    }
-  }
-}
-
-// 塔对象
-export class TowerGameObject extends GameObject {
-  id = createRandomId('TowerGameObject')
-
-  constructor ({
-    id,
-    shapeOptions,
-    models = []
-  }: TowerGameObjectOptions) {
-    super({
-      type: GameObjectTypes.TOWER,
-      shape: new RectangleShape(shapeOptions, models)
-    })
-
-    if (id) {
-      this.id = id
-    }
-  }
-}
-
-// 敌人对象
-export class EnemyGameObject extends GameObject {
-  id = createRandomId('EnemyGameObject')
-
-  constructor ({
-    id,
-    shapeOptions,
-    models = []
-  }: EnemyGameObjectOptions) {
-    super({
-      type: GameObjectTypes.ENEMY,
       shape: new RectangleShape(shapeOptions, models)
     })
 
