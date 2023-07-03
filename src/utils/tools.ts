@@ -74,3 +74,16 @@ export const loadImage = ({ name, width, height, src }: Resource) => {
     oImg.src = src
   })
 }
+
+/**
+ * 将秒数转换成时分秒格式
+ */
+export const convertSeconds = (input = 0): [string, string, string] => {
+  const rest = input % (60 * 60)
+
+  return [
+    `${Math.floor(input / 60 / 60)}`.padStart(2, '0'),
+    `${Math.floor(rest / 60)}`.padStart(2, '0'),
+    `${rest % 60}`.padStart(2, '0')
+  ]
+}
