@@ -28,6 +28,7 @@ export class Bullet extends GameObject {
   protected coordinate: Coordinate
   protected velocity?: Coordinate | undefined
   protected rotate = 0
+
   destroy (): void {
     // ...
   }

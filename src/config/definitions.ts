@@ -17,7 +17,11 @@ export enum GameObjectTypes {
   // 塔对象
   TOWER,
   // 敌人对象
-  ENEMY
+  ENEMY,
+  // 技能对象
+  SKILL,
+  // 子弹对象
+  BULLET
 }
 
 // 渲染器类型

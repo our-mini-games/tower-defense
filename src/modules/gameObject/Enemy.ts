@@ -11,7 +11,7 @@ export interface EnemyGameObjectOptions {
 }
 
 export class EnemyGameObject extends GameObject {
-  id = createRandomId('EnemyGameObject')
+  id: string
 
   constructor ({
     id,
@@ -23,8 +23,6 @@ export class EnemyGameObject extends GameObject {
       shape: new RectangleShape(shapeOptions, models)
     })
 
-    if (id) {
-      this.id = id
-    }
+    this.id = id || createRandomId('EnemyGameObject')
   }
 }
