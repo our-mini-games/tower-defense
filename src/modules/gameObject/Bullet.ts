@@ -7,7 +7,7 @@ export interface BulletGameObjectOptions {
 
 export class BulletGameObject extends GameObject {
   constructor ({
-    id
+    id: _id
   }: BulletGameObjectOptions) {
     super({
       type: GameObjectTypes.BULLET

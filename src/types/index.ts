@@ -16,5 +16,5 @@ export interface Resource {
 }
 
 export interface ImageResource extends Omit<Resource, 'src'> {
-  img: HTMLImageElement
+  img: HTMLImageElement | HTMLCanvasElement
 }

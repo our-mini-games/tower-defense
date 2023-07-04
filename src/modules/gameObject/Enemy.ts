@@ -23,6 +23,7 @@ export class EnemyGameObject extends GameObject {
       shape: new RectangleShape(shapeOptions, models)
     })
 
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     this.id = id || createRandomId('EnemyGameObject')
   }
 }
