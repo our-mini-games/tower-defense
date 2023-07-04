@@ -9,10 +9,6 @@ import type { Action } from '../action'
 import { BaseModule } from '../base'
 import { RectangleShape, Shape, type ShapeOptions } from '../shape'
 import type { Trigger } from '../trigger'
-// import { BulletGameObject, type BulletGameObjectOptions } from './Bullet'
-// import { EnemyGameObject, type EnemyGameObjectOptions } from './Enemy'
-// import { SkillGameObject, type SkillGameObjectOptions } from './Skill'
-// import { TowerGameObject, type TowerGameObjectOptions } from './Tower'
 
 export interface GameObjectOptions {
   id?: string
@@ -53,34 +49,6 @@ export class GameObject extends BaseModule {
       this.id = options.id
     }
   }
-
-  // static create (type: GameObjectTypes.GLOBAL): GameObject
-  // static create (type: GameObjectTypes.POINT, pointObjectOptions: PointGameObjectOptions): GameObject
-  // static create (type: GameObjectTypes.AREA, areaObjectOptions: AreaGameObjectOptions): GameObject
-  // static create (type: GameObjectTypes.TOWER, towerObjectOptions: TowerGameObjectOptions): GameObject
-  // static create (type: GameObjectTypes.ENEMY, enemyObjectOptions: EnemyGameObjectOptions): GameObject
-  // static create (type: GameObjectTypes.SKILL, skillObjectOptions: SkillGameObjectOptions): GameObject
-  // static create (type: GameObjectTypes.BULLET, bulletObjectOptions: BulletGameObjectOptions): GameObject
-  // static create (type: GameObjectTypes, ...args: unknown[]): GameObject | null {
-  //   switch (type) {
-  //     case GameObjectTypes.GLOBAL:
-  //       return new GlobalGameObject()
-  //     case GameObjectTypes.POINT:
-  //       return new PointGameObject(args[0] as PointGameObjectOptions)
-  //     case GameObjectTypes.AREA:
-  //       return new AreaGameObject(args[0] as AreaGameObjectOptions)
-  //     case GameObjectTypes.TOWER:
-  //       return new TowerGameObject(args[0] as TowerGameObjectOptions)
-  //     case GameObjectTypes.ENEMY:
-  //       return new EnemyGameObject(args[0] as EnemyGameObjectOptions)
-  //     case GameObjectTypes.SKILL:
-  //       return new SkillGameObject(args[0] as SkillGameObjectOptions)
-  //     case GameObjectTypes.BULLET:
-  //       return new BulletGameObject(args[0] as BulletGameObjectOptions)
-  //     default:
-  //       return null
-  //   }
-  // }
 
   init (parentCollection: Map<string, GameObject>) {
     if (parentCollection) {
