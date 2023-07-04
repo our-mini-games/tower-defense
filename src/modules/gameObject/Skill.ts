@@ -57,11 +57,23 @@ export class SkillGameObject extends GameObject {
     super({
       type: GameObjectTypes.SKILL
     })
-    if (type === 'Enemy') {
-      this.speed = LevelNumeric.Level1.speed
-    } else {
-      //
+    for (const [key, value] of Object.entries(LevelNumeric.Level1)) {
+      // @ts-expect-error no-wrong-here
+      this[key] = value
     }
+    type === 'Tower' ? this.initTower() : this.initEnemy()
     this.id = id ?? createRandomId('SkillGameObject')
+  }
+
+  initTower () {
+    //
+  }
+
+  initEnemy () {
+    //
+  }
+
+  generateBullet () {
+    //
   }
 }
