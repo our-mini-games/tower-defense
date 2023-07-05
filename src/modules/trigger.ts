@@ -8,7 +8,7 @@ import { BaseModule } from './base'
 import type { GameObject } from './gameObject'
 
 interface TriggerOptions {
-  conditions: Array<(...args: unknown[]) => boolean>
+  conditions: Array<(source: GameObject, trigger: Trigger) => boolean>
   actions: Action[]
   once?: boolean
   id?: string
