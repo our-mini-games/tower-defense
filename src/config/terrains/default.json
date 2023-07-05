@@ -3,44 +3,143 @@
   "name": "default",
   "size": 48,
   "layout": [
-    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "i"],
-    ["r", "x", "x", "x", "x", "x", "p", "p", "p", "p"],
-    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "p"],
-    ["p", "p", "p", "x", "x", "x", "x", "x", "r", "p"],
-    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "p"],
-    ["r", "x", "x", "x", "x", "x", "p", "p", "p", "p"],
-    ["r", "r", "r", "r", "r", "r", "r", "r", "r", "o"]
+    ["m-nw", "m-n", "m-n", "m-n", "m-n", "m-n", "m-n", "m-n", "m-n", "m-ne"],
+    ["m-w", "b-c", "b-c", "b-c", "b-c", "b-c", "u-s", "u-s", "u-s", "u-el"],
+    ["m-sw", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-ne", "u-e"],
+    ["u-s", "u-s", "u-s", "b-c", "b-c", "b-c", "b-c", "b-c", "m-e", "u-e"],
+    ["m-nw", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-se", "u-e"],
+    ["m-w", "b-c", "b-c", "b-c", "b-c", "b-c", "u-s", "u-s", "u-s", "u-el"],
+    ["m-sw", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-se"]
   ],
   "resource": {
-    "r": {
-      "name": "r",
+    "m-nw": {
+      "name": "m-nw",
       "width": 48,
       "height": 48,
-      "src": "/terrains/r.svg"
+      "src": "/terrains/movable/nw.svg"
     },
-    "x": {
-      "name": "x",
+    "m-n": {
+      "name": "m-n",
       "width": 48,
       "height": 48,
-      "src": "/terrains/x.svg"
+      "src": "/terrains/movable/n.svg"
     },
-    "p": {
-      "name": "p",
+    "m-ne": {
+      "name": "m-ne",
       "width": 48,
       "height": 48,
-      "src": "/terrains/p.svg"
+      "src": "/terrains/movable/ne.svg"
     },
-    "i": {
-      "name": "i",
+    "m-w": {
+      "name": "m-w",
       "width": 48,
       "height": 48,
-      "src": "/terrains/i.svg"
+      "src": "/terrains/movable/w.svg"
     },
-    "o": {
-      "name": "o",
+    "m-e": {
+      "name": "m-e",
       "width": 48,
       "height": 48,
-      "src": "/terrains/o.svg"
+      "src": "/terrains/movable/e.svg"
+    },
+    "m-sw": {
+      "name": "m-sw",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/movable/sw.svg"
+    },
+    "m-s": {
+      "name": "m-s",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/movable/s.svg"
+    },
+    "m-se": {
+      "name": "m-se",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/movable/se.svg"
+    },
+
+    "u-nw": {
+      "name": "u-nw",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/nw.svg"
+    },
+    "u-n": {
+      "name": "u-n",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/n.svg"
+    },
+    "u-ne": {
+      "name": "u-ne",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/ne.svg"
+    },
+    "u-w": {
+      "name": "u-w",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/w.svg"
+    },
+    "u-e": {
+      "name": "u-e",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/e.svg"
+    },
+    "u-sw": {
+      "name": "u-sw",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/sw.svg"
+    },
+    "u-s": {
+      "name": "u-s",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/s.svg"
+    },
+    "u-se": {
+      "name": "u-se",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/se.svg"
+    },
+
+    "u-nl": {
+      "name": "u-nl",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/nl.svg"
+    },
+    "u-el": {
+      "name": "u-el",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/el.svg"
+    },
+    "u-sl": {
+      "name": "u-sl",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/sl.svg"
+    },
+    "u-wl": {
+      "name": "u-wl",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/unbuildable/wl.svg"
+    },
+
+    "b-c": {
+      "name": "b-c",
+      "width": 48,
+      "height": 48,
+      "src": "/terrains/buildable/c.svg"
     }
   }
 }
