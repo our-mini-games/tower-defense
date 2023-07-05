@@ -18,3 +18,5 @@ export interface Resource {
 export interface ImageResource extends Omit<Resource, 'src'> {
   img: HTMLImageElement | HTMLCanvasElement
 }
+
+export const NOOP = () => { return null }
