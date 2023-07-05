@@ -1,6 +1,6 @@
 import { ShapeTypes } from '../config'
 import type { Coordinate, ImageResource } from '../types'
-import { isSamePoint } from '../utils/tools'
+import { isSamePoint } from '../utils/check'
 import { BaseModule } from './base'
 
 export interface ShapeOptions {

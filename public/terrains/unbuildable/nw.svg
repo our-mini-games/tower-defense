@@ -1,0 +1,35 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 1024 1024">
+  <rect x="0" y="0" width="1024" height="1024" fill="#9e9e9e" />
+
+  <g>
+    <line x1="1024" y1="0" x2="0" y2="1024" stroke-width="16" stroke="#fff" />
+
+    <line x1="768" y1="0" x2="0" y2="768" stroke-width="16" stroke="#fff" />
+    <line x1="512" y1="0" x2="0" y2="512" stroke-width="16" stroke="#fff" />
+    <line x1="256" y1="0" x2="0" y2="256" stroke-width="16" stroke="#fff" />
+
+    <line x1="1024" y1="256" x2="256" y2="1024" stroke-width="16" stroke="#fff" />
+    <line x1="1024" y1="512" x2="512" y2="1024" stroke-width="16" stroke="#fff" />
+    <line x1="1024" y1="768" x2="768" y2="1024" stroke-width="16" stroke="#fff" />
+  </g>
+
+  <g>
+    <line x1="0" y2="1024" x2="1024" y1="0" stroke-width="16" stroke="#fff" />
+
+    <line x1="0" y1="256" x2="768" y2="1024" stroke-width="16" stroke="#fff" />
+    <line x1="0" y1="512" x2="512" y2="1024" stroke-width="16" stroke="#fff" />
+    <line x1="0" y1="768" x2="256" y2="1024"  stroke-width="16" stroke="#fff" />
+
+    <line x1="256" y1="0" x2="1024" y2="768" stroke-width="16" stroke="#fff" />
+    <line x1="512" y1="0" x2="1024" y2="512" stroke-width="16" stroke="#fff" />
+    <line x1="768" y1="0" x2="1024" y2="256" stroke-width="16" stroke="#fff" />
+  </g>
+
+  <rect x="128" y="128" width="896" height="896" stroke-width="64" stroke="none" fill="#9e9e9e" />
+
+  <line x1="128" y1="128" x2="1024" y2="128" stroke-width="64" stroke="#fff" stroke-linecap="round" />
+  <line x1="128" y1="128" x2="128" y2="1024" stroke-width="64" stroke="#fff" stroke-linecap="round" />
+
+  <line x1="896" y1="896" x2="1024" y2="896" stroke-width="64" stroke="#fff" stroke-linecap="round" />
+  <line x1="896" y1="896" x2="896" y2="1024" stroke-width="64" stroke="#fff" stroke-linecap="round" />
+</svg>

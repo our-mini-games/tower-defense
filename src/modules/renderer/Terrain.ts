@@ -5,7 +5,7 @@ import { Renderer } from '../base'
 
 interface TerrainData extends Coordinate {
   size: number
-  img: HTMLImageElement
+  img: HTMLImageElement | HTMLCanvasElement
 }
 
 export default class TerrainRenderer extends Renderer {
