@@ -25,7 +25,7 @@ export interface ActionOptions<T extends ActionTypes | unknown = unknown> {
   target?: T extends ActionTypes.CREATE
     ? CreateTarget
     : GameObject
-  callback: ActionCallback
+  callback?: ActionCallback
 }
 
 export interface IntervalActionOptions<T extends ActionTypes | unknown = unknown> extends ActionOptions<T> {
@@ -40,7 +40,7 @@ export class Action<T extends ActionTypes | unknown = unknown> {
   source?: GameObject
   target?: ActionOptions['target']
 
-  callback: ActionCallback = NOOP
+  callback?: ActionCallback = NOOP
 
   constructor (options: ActionOptions<T>) {
     Object.assign(this, options)
@@ -69,6 +69,7 @@ export class Action<T extends ActionTypes | unknown = unknown> {
         }
         break
       case ActionTypes.CREATE:
+        // @ts-expect-error it-must-be-here
         this.callback()
         break
       default:
