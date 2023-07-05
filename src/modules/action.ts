@@ -3,9 +3,9 @@
  */
 
 import { ActionTypes, type GameObjectTypes } from '../config'
-import type { ImageResource } from '../types'
+import { type ImageResource, NOOP } from '../types'
 import { createRandomId } from '../utils/tools'
-import { GameObject } from './gameObject'
+import { type GameObject } from './gameObject'
 import type { ShapeOptions } from './shape'
 
 interface ActionCallback {
@@ -40,7 +40,7 @@ export class Action<T extends ActionTypes | unknown = unknown> {
   source?: GameObject
   target?: ActionOptions['target']
 
-  callback?: ActionCallback
+  callback?: ActionCallback = NOOP
 
   constructor (options: ActionOptions<T>) {
     Object.assign(this, options)
@@ -69,15 +69,8 @@ export class Action<T extends ActionTypes | unknown = unknown> {
         }
         break
       case ActionTypes.CREATE:
-        if (this.target) {
-          const { type, shapeOptions } = this.target as unknown as CreateTarget
-          const gameObject = GameObject.create(
-            type as GameObjectTypes.ENEMY,
-            { shapeOptions }
-          )
-
-          this.callback?.(gameObject, this)
-        }
+        // @ts-expect-error it-must-be-here
+        this.callback()
         break
       default:
         break
