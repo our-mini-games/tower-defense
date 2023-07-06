@@ -63,6 +63,8 @@ export const isPointInGameObject = ({ x, y }: Coordinate, gameObject: GameObject
     minY + height / 2
   ]
 
+  console.log(x, y, x1, y1, x2, y2)
+
   return (
     x >= x1 &&
     y >= y1 &&

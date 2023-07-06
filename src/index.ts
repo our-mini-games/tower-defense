@@ -1,11 +1,10 @@
 import './assets/style.css'
 
-import { TerrainRenderer } from './modules'
-
-// import { TechnologyPanelRenderer } from './modules'
-// import { type GameObject } from './modules/gameObject'
-// import { TowerGameObject } from './modules/gameObject/Tower'
-// import { loadImages } from './utils/tools'
+import { TechnologyPanelRenderer } from './modules'
+import { type GameObject } from './modules/gameObject'
+import { TowerGameObject } from './modules/gameObject/Tower'
+import { InteractivePanelRenderer } from './modules/renderer/InteractivePanel'
+import { loadImages } from './utils/tools'
 // import { StatisticsPanelRenderer } from './modules'
 // import { CentralControlSystem } from './modules/centralControlSystem'
 
@@ -51,65 +50,80 @@ const app = document.querySelector<HTMLElement>('#app')!
 //   goldAmount: 10086
 // })
 
-// const technologyPanelRenderer = new TechnologyPanelRenderer({
-//   width: 48 * 4,
-//   height: 48 * 2
+const technologyPanelRenderer = new TechnologyPanelRenderer({
+  width: 48 * 4,
+  height: 48 * 2
+})
+
+await technologyPanelRenderer.init()
+const towerModels = await loadImages([
+  {
+    name: 'tower1',
+    width: 48,
+    height: 48,
+    src: '/tower-warrior.svg'
+  },
+
+  {
+    name: 'tower2',
+    width: 48,
+    height: 48,
+    src: '/tower-mage.svg'
+  },
+
+  {
+    name: 'tower3',
+    width: 48,
+    height: 48,
+    src: '/tower-archer.svg'
+  }
+])
+
+technologyPanelRenderer.mount(app, {
+  // backgroundColor: 'rgba(0, 192, 168, 0.2)'
+  border: '1px solid #abc'
+})
+
+const gameObjects = new Map<string, GameObject>()
+
+for (let i = 0; i < 3; i++) {
+  new TowerGameObject({
+    id: `tower-${i + 1}`,
+    shapeOptions: {
+      midpoint: {
+        x: 12 * (i + 1) + 48 * i + 48 / 2,
+        y: technologyPanelRenderer.height / 2
+      },
+      width: 48,
+      height: 48
+    },
+    models: [towerModels[i]]
+  }).init(gameObjects)
+}
+
+technologyPanelRenderer.draw(gameObjects)
+
+// const terrainRenderer = new TerrainRenderer({
+//   terrainName: 'default',
+//   width: 48 * 10,
+//   height: 48 * 7
 // })
 
-// await technologyPanelRenderer.init()
-// const towerModels = await loadImages([
-//   {
-//     name: 'tower1',
-//     width: 48,
-//     height: 48,
-//     src: '/tower-warrior.svg'
-//   },
+// await terrainRenderer.init()
 
-//   {
-//     name: 'tower2',
-//     width: 48,
-//     height: 48,
-//     src: '/tower-mage.svg'
-//   },
+// terrainRenderer.mount(app)
 
-//   {
-//     name: 'tower3',
-//     width: 48,
-//     height: 48,
-//     src: '/tower-archer.svg'
-//   }
-// ])
-
-// technologyPanelRenderer.mount(app, {
-//   // backgroundColor: 'rgba(0, 192, 168, 0.2)'
-//   border: '1px solid #abc'
-// })
-
-// const gameObjects = new Map<string, GameObject>()
-
-// for (let i = 0; i < 3; i++) {
-//   new TowerGameObject({
-//     id: `tower-${i + 1}`,
-//     shapeOptions: {
-//       midpoint: {
-//         x: 12 * (i + 1) + 48 * i + 48 / 2,
-//         y: technologyPanelRenderer.height / 2
-//       },
-//       width: 48,
-//       height: 48
-//     },
-//     models: [towerModels[i]]
-//   }).init(gameObjects)
-// }
-
-// technologyPanelRenderer.draw(gameObjects)
-
-const terrainRenderer = new TerrainRenderer({
-  terrainName: 'default',
+// interactive renderer
+const interactivePanelRenderer = new InteractivePanelRenderer({
   width: 48 * 10,
   height: 48 * 7
 })
 
-await terrainRenderer.init()
-
-terrainRenderer.mount(app)
+interactivePanelRenderer.mount(app, {
+  position: 'absolute',
+  left: '0',
+  top: '0',
+  zIndex: '1'
+})
+interactivePanelRenderer.init(gameObjects)
+interactivePanelRenderer.initEvents()
