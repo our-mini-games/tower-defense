@@ -5,7 +5,7 @@
  */
 
 import type { Coordinate, ImageResource } from '../../types'
-import { isPointInGameObject } from '../../utils/check'
+import { isPointInGameObject, isSkill } from '../../utils/check'
 import { drawCrystalAnimation } from '../../utils/draw'
 import { loadImage } from '../../utils/tools'
 import { Renderer } from '../base'
@@ -24,6 +24,7 @@ enum EventState {
 
 export class InteractivePanelRenderer extends Renderer {
   state: EventState = EventState.DEFAULT
+  /** [左（主）键，中键，右键] */
   button = 0
 
   startPoint: Coordinate = { x: 0, y: 0 }
@@ -51,6 +52,10 @@ export class InteractivePanelRenderer extends Renderer {
      * @todo - 检测当前选中对象为一个建造区对象
      */
     return this.selectedGameObjects.length === 1
+  }
+
+  get firstSelectedGameObject () {
+    return this.selectedGameObjects[0]
   }
 
   async init (gameObjects: Map<string, GameObject>) {
@@ -106,6 +111,25 @@ export class InteractivePanelRenderer extends Renderer {
     )
   }
 
+  drawSkillShadow ({ x, y }: Coordinate) {
+    const {
+      ctx,
+      firstSelectedGameObject
+    } = this
+
+    this.clear()
+
+    if (!firstSelectedGameObject?.shape.model) return
+
+    const {
+      img,
+      width,
+      height
+    } = firstSelectedGameObject.shape.model
+
+    ctx.drawImage(img, x, y, width, height)
+  }
+
   handleMousedown = (e: MouseEvent) => {
     e.preventDefault()
     console.log(e)
@@ -122,6 +146,18 @@ export class InteractivePanelRenderer extends Renderer {
       this.state = EventState.DEFAULT
     }
 
+    if (this.state === EventState.ACTION) {
+      // @todo - 在 Action 动作时，点击右键意味着是取消技能释放
+      if (this.button === 2) {
+        // ...
+      } else if (this.button === 0) {
+        // 主键点击，意味着要建造
+        // 检测是否满足释放条件
+        // - 满足则进行技能释放
+        // - 不满足则不处理
+      }
+    }
+
     this.startPoint = {
       x: e.clientX,
       y: e.clientY
@@ -133,6 +169,18 @@ export class InteractivePanelRenderer extends Renderer {
 
   handleMousemove = (e: MouseEvent) => {
     e.preventDefault()
+
+    // 进入 ACTION 操作
+    // 在 Move 时应该会有一个技能阴影位于指针处
+    if (this.state === EventState.ACTION) {
+      this.drawSkillShadow({
+        x: e.clientX,
+        y: e.clientY
+      })
+
+      return
+    }
+
     if (e.button === 0 && this.state === EventState.SELECT) {
       this.currentPoint = {
         x: e.clientX,
@@ -158,14 +206,20 @@ export class InteractivePanelRenderer extends Renderer {
       // 2. 用户选中了已建造的塔
       this.getSelectedGameObjects(point)
 
+      if (this.selectedGameObjects.length === 1 && isSkill(this.firstSelectedGameObject)) {
+        // 当前点击了某个技能
+      } else {
+        document.removeEventListener('mouseup', this.handleMouseup)
+      }
+
       console.log(this.selectedGameObjects)
     } else if (this.button === 2) {
       // 右键点击某个位置
       drawCrystalAnimation(this.crystalResource!, this.ctx, { x: e.clientX, y: e.clientY })
-    }
 
-    document.removeEventListener('mousemove', this.handleMousemove)
-    document.removeEventListener('mouseup', this.handleMouseup)
+      document.removeEventListener('mousemove', this.handleMousemove)
+      document.removeEventListener('mouseup', this.handleMouseup)
+    }
   }
 
   getSelectedGameObjects (point: Coordinate) {
