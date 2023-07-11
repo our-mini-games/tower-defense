@@ -8,7 +8,7 @@ import { loadImage } from '../utils/tools'
 import { Action, IntervalAction } from './action'
 import { BaseModule, type Renderer } from './base'
 import { GameObject } from './gameObject'
-import { Trigger } from './trigger'
+import { Trigger } from './trigger/Trigger'
 
 export class CentralControlSystem extends BaseModule {
   data = null

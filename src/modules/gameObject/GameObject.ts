@@ -4,11 +4,11 @@
 
 import { type ActionTypes, GameObjectTypes, ShapeTypes } from '../../config'
 import type { Coordinate, ImageResource } from '../../types'
-import { createRandomId } from '../../utils/tools'
+import { createRandomId, move } from '../../utils/tools'
 import type { Action } from '../action'
 import { BaseModule } from '../base'
 import { RectangleShape, Shape, type ShapeOptions } from '../shape'
-import type { Trigger } from '../trigger'
+import type { Skill, Trigger } from '../trigger'
 
 export interface GameObjectOptions {
   id?: string
@@ -37,6 +37,10 @@ export class GameObject extends BaseModule {
   actions = new Map<ActionTypes, Action>()
   parentCollection?: Map<string, GameObject>
 
+  skills = new Set<Skill>()
+
+  speed = 2
+
   constructor (options: GameObjectOptions) {
     if (new.target === GameObject) {
       throw new Error('Cannot instantiate GameObject')
@@ -55,10 +59,14 @@ export class GameObject extends BaseModule {
       this.parentCollection = parentCollection
       parentCollection.set(this.id, this)
     }
-    this.update()
+    this.update(parentCollection)
   }
 
-  update () {
+  update (..._args: unknown[]) {
+    this.skills.forEach(skill => {
+      skill.fire(this)
+    })
+
     this.shape.update()
 
     this.actions.forEach(action => {
@@ -113,7 +121,8 @@ export class GameObject extends BaseModule {
     const {
       shape: {
         midpoint: { x: x1, y: y1 }
-      }
+      },
+      speed
     } = this
     const {
       shape: {
@@ -121,45 +130,44 @@ export class GameObject extends BaseModule {
       }
     } = target
 
-    /**
-     * @todo - 需要计算速度
-     */
-    const speed = 2
-
     if (x1 === x2 && y1 === y2) {
       return
     }
 
-    if (x1 === x2) {
-      this.shape.setMidpoint(
-        x1,
-        y1 > y2
-          ? Math.max(y2, y1 - speed)
-          : Math.min(y2, y1 + speed)
-      )
+    const { x, y } = move(x1, y1, x2, y2, speed)
 
-      return
-    }
+    this.shape.setMidpoint(x, y)
 
-    if (y1 === y2) {
-      this.shape.setMidpoint(
-        x1 > x2
-          ? Math.max(x2, x1 - speed)
-          : Math.min(x2, x1 + speed),
-        y1
-      )
+    // if (x1 === x2) {
+    //   this.shape.setMidpoint(
+    //     x1,
+    //     y1 > y2
+    //       ? Math.max(y2, y1 - speed)
+    //       : Math.min(y2, y1 + speed)
+    //   )
 
-      return
-    }
+    //   return
+    // }
 
-    this.shape.setMidpoint(
-      x1 > x2
-        ? Math.max(x2, x1 - speed)
-        : Math.min(x2, x1 + speed),
-      y1 > y2
-        ? Math.max(y2, y1 - speed)
-        : Math.min(y2, y1 + speed)
-    )
+    // if (y1 === y2) {
+    //   this.shape.setMidpoint(
+    //     x1 > x2
+    //       ? Math.max(x2, x1 - speed)
+    //       : Math.min(x2, x1 + speed),
+    //     y1
+    //   )
+
+    //   return
+    // }
+
+    // this.shape.setMidpoint(
+    //   x1 > x2
+    //     ? Math.max(x2, x1 - speed)
+    //     : Math.min(x2, x1 + speed),
+    //   y1 > y2
+    //     ? Math.max(y2, y1 - speed)
+    //     : Math.min(y2, y1 + speed)
+    // )
   }
 
   static isEnemy (gameObject: GameObject) {

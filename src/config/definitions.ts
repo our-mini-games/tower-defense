@@ -44,3 +44,22 @@ export enum ShapeTypes {
   CIRCLE,
   IRREGULAR_FIGURE
 }
+
+/** 技能种类 */
+export enum SkillTypes {
+  ATTACK,
+  MOVE,
+  BUILD
+}
+
+/** 技能类型 */
+export enum SkillModes {
+  ACTIVE,
+  PASSIVE
+}
+
+/** 技能释放类型 */
+export enum SkillReleaseModes {
+  DIRECT,
+  SELECT_TARGET
+}

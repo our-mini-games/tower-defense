@@ -2,6 +2,7 @@
  * 检测类工具函数
  */
 
+import { GameObjectTypes } from '../config'
 import type { GameObject } from '../modules/gameObject'
 import type { Coordinate } from '../types'
 
@@ -63,8 +64,6 @@ export const isPointInGameObject = ({ x, y }: Coordinate, gameObject: GameObject
     minY + height / 2
   ]
 
-  console.log(x, y, x1, y1, x2, y2)
-
   return (
     x >= x1 &&
     y >= y1 &&
@@ -72,3 +71,6 @@ export const isPointInGameObject = ({ x, y }: Coordinate, gameObject: GameObject
     y <= y2
   )
 }
+
+// 检测某个对象是否为一个技能
+export const isSkill = (gameObject: GameObject) => gameObject.type === GameObjectTypes.SKILL
