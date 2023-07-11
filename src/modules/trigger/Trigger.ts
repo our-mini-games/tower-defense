@@ -2,12 +2,12 @@
  * 触发器
  */
 
-import { createRandomId } from '../utils/tools'
-import type { Action } from './action'
-import { BaseModule } from './base'
-import type { GameObject } from './gameObject'
+import { createRandomId } from '../../utils/tools'
+import type { Action } from '../action'
+import { BaseModule } from '../base'
+import type { GameObject } from '../gameObject'
 
-interface TriggerOptions {
+export interface TriggerOptions {
   conditions: Array<(source: GameObject, trigger: Trigger) => boolean>
   actions: Action[]
   once?: boolean
@@ -38,11 +38,11 @@ export class Trigger extends BaseModule {
     this.currentTime = new Date().getTime()
   }
 
-  init () {
+  init (..._args: unknown[]) {
     //
   }
 
-  update () {
+  update (..._args: unknown[]) {
     //
   }
 
@@ -54,7 +54,19 @@ export class Trigger extends BaseModule {
   }
 
   fire (source: GameObject) {
-    if (this.isTriggered) return
+    // 当前 trigger 已经被触发过，此时应该解绑对象中的 actions
+    if (this.isTriggered) {
+      this.actions.forEach(action => {
+        source.actions.forEach(sourceAction => {
+          if (action === sourceAction) {
+            source.actions.delete(sourceAction.type)
+          }
+        })
+      })
+      source.unbindTrigger(this.id)
+
+      return
+    }
 
     this.isTriggered = this.once
 

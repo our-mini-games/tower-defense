@@ -1,3 +1,4 @@
+import type { GameObject } from '../modules/gameObject'
 import type { Coordinate, ImageResource, Resource } from '../types'
 
 interface Rect extends Coordinate {
@@ -76,4 +77,25 @@ export const convertSeconds = (input = 0): [string, string, string] => {
     `${Math.floor(rest / 60)}`.padStart(2, '0'),
     `${rest % 60}`.padStart(2, '0')
   ]
+}
+
+export const cloneMidpoint = (gameObject: GameObject) => {
+  const {
+    shape: {
+      midpoint: { x, y }
+    }
+  } = gameObject
+
+  return { x, y }
+}
+
+export const move = (x1: number, y1: number, x2: number, y2: number, distance: number): Coordinate => {
+  const angle = Math.atan2(y2 - y1, x2 - x1)
+  const newX = x1 + distance * Math.cos(angle)
+  const newY = y1 + distance * Math.sin(angle)
+
+  return {
+    x: Math.round(newX),
+    y: Math.round(newY)
+  }
 }
