@@ -1,10 +1,7 @@
-// eslint-disable-next-line
-import { Trigger, type TriggerOptions } from './Trigger'
-import { Skill, type SkillOptions } from './Skill'
+import { Skill } from './Skill'
+import { Trigger } from './Trigger'
 
 export {
   Skill,
-  type SkillOptions,
-  Trigger,
-  type TriggerOptions
+  Trigger
 }

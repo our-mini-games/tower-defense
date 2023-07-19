@@ -1,89 +1,69 @@
-/**
- * 触发器
- */
-
+import { type EventTypes, State } from '../../config'
 import { createRandomId } from '../../utils/tools'
-import type { Action } from '../action'
-import { BaseModule } from '../base'
-import type { GameObject } from '../gameObject'
 
-export interface TriggerOptions {
-  conditions: Array<(source: GameObject, trigger: Trigger) => boolean>
-  actions: Action[]
-  once?: boolean
+/** @todo */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EventObject = any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Context = any
+
+interface TriggerOptions {
   id?: string
+  event: EventTypes
+  conditions?: Array<(triggerObject: unknown) => boolean>
+  actions: Array<(triggerObject: unknown, targetObject: unknown, context: Context, thisArg: Trigger) => void>
 }
 
-export class Trigger extends BaseModule {
-  data = null
-  id = createRandomId('Trigger_')
+export class Trigger {
+  id = createRandomId('Trigger')
+  #state: State = State.ACTIVE
 
-  once = false
-  isTriggered = false
-
+  event!: EventTypes
   conditions: TriggerOptions['conditions'] = []
   actions: TriggerOptions['actions'] = []
 
-  /** 记录当前时间戳，用于条件计算游戏消耗时间 */
-  currentTime = 0
+  eventObjects: EventObject[] = []
 
-  constructor ({ id, once, conditions, actions }: TriggerOptions) {
-    super()
+  constructor ({ id, event, conditions, actions }: TriggerOptions) {
     if (id) {
       this.id = id
     }
-    this.once = !!once
-    this.conditions = conditions
-    this.actions = actions
-    this.currentTime = new Date().getTime()
+
+    Object.assign(this, { event, conditions: conditions ?? [], actions })
   }
 
-  init (..._args: unknown[]) {
-    //
+  get isActive () {
+    return this.#state === State.ACTIVE
   }
 
-  update (..._args: unknown[]) {
-    //
+  setState (state: State) {
+    this.#state = state
   }
 
-  check (source: GameObject) {
-    // Always return true when conditions.length === 0
-    if (this.conditions.length === 0) return false
-
-    return this.conditions.every(condition => condition(source, this))
+  /**
+   * 收集事件对象，它包含的触发的对象和目标对象，以及一些必要的坐标信息
+   */
+  setEventObject (eventObjects: EventObject[]) {
+    this.eventObjects = eventObjects
   }
 
-  fire (source: GameObject) {
-    // 当前 trigger 已经被触发过，此时应该解绑对象中的 actions
-    if (this.isTriggered) {
-      this.actions.forEach(action => {
-        source.actions.forEach(sourceAction => {
-          if (action === sourceAction) {
-            source.actions.delete(sourceAction.type)
-          }
-        })
-      })
-      source.unbindTrigger(this.id)
-
-      return
-    }
-
-    this.isTriggered = this.once
-
-    if (this.check(source)) {
-      source.bindTrigger(this)
-    }
+  checkCondition (eventObject: EventObject) {
+    return this.conditions?.every(condition => condition(eventObject.trigger))
   }
 
-  isTimeout (interval: number) {
-    const currentTime = new Date().getTime()
+  fire (context: Context) {
+    if (!this.isActive) return
 
-    const isTimeout = currentTime - this.currentTime >= interval
+    this.eventObjects.forEach(eventObject => {
+      if (this.checkCondition(eventObject)) {
+        this.doAction(eventObject, context)
+      }
+    })
+  }
 
-    if (isTimeout) {
-      this.currentTime = currentTime
-    }
-
-    return isTimeout
+  doAction (eventObject: EventObject, context: Context) {
+    this.actions.forEach(action => {
+      action(eventObject.trigger, eventObject.target, context, this)
+    })
   }
 }

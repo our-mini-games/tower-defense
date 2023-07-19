@@ -1,142 +1,202 @@
-import { SkillModes, SkillReleaseModes, type SkillTypes } from '../../config'
-import type { ImageResource } from '../../types'
-import { createRandomId } from '../../utils/tools'
-// import { IntervalAction } from '../action'
-// import { BulletGameObject } from './Bullet'
-import { type EnemyGameObject } from '../gameObject/Enemy'
-import type { GameObject } from '../gameObject/GameObject'
-import { Trigger, type TriggerOptions } from './'
+import { SkillModes, SkillTypes } from '../../config'
+import { createRandomId, sleep } from '../../utils/tools'
+import { type Context } from '../centralControlSystem'
+import type { GameObject } from '../gameObject'
 
-// @todo - Level
-// type Level = Record<string, Partial<SkillGameObject>>
-
-// const LevelNumeric: Level = {
-//   Level1: {
-//     speed: 1,
-//     health: 100,
-//     magicPoints: 10,
-//     attack: 20,
-//     attackTime: 10,
-//     defense: 5,
-//     magicDefense: 5,
-//     releaseTime: 2
-//   },
-//   Level2: {
-//     speed: 1,
-//     health: 100,
-//     magicPoints: 10,
-//     attack: 20,
-//     attackTime: 10,
-//     defense: 5,
-//     magicDefense: 5,
-//     releaseTime: 2
-//   }
-// }
-
-export interface SkillOptions extends TriggerOptions {
-  name?: string
-  description?: string
-  icon?: ImageResource
-
-  /** 技能种类 */
-  type: SkillTypes
-
-  /** 技能类型：主动 / 被动 */
-  mode?: SkillModes
-  /** 技能释放类型：直接释放 / 选中目标释放 */
-  releaseMode?: SkillReleaseModes
-  /** 技能攻击范围 */
-  attackRange?: number
-  /** 技能释放/起手时间 */
-  releaseTime?: number
-
-  coolDown?: number
+enum SkillState {
+  // 技能准备完成
+  ALREADY,
+  // 技能起手/释放中
+  RELEASING,
+  // 技能冷却中
+  COOLING
 }
 
-// export interface SkillGameObject {
-//   level: string
-//   health: number
-//   magicPoints: number
-//   skills: []
-//   speed?: number
-//   attack: number
-//   attackTime: number
-//   defense: number
-//   magicDefense: number
-//   releaseTime: number
-//   attackRange: number
-//   skillDuration: number
-//   skillCoolDown: number
-//   attackMode: []
-// }
+interface SpecialConsume {
+  descriptions: string
+  /**
+   * 检测消耗
+   * @param gameObject - 技能拥有者
+   */
+  detectFn: (gameObject: GameObject) => boolean
+  /**
+   * 执行消耗
+   * @param gameObject - 技能拥有者
+   */
+  consumeFn: (gameObject: GameObject) => void
+}
+/** MP | HP | 特殊消耗 */
+type ConsumeType = [number, number, SpecialConsume?]
 
-/**
- * 技能，应该是一个特殊的触发器
- * - 主动技能：
- *   - 点击直接释放
- *   - 点击后，需要选定位置释放
- * - 被动技能
- */
-export class Skill extends Trigger {
-  type!: SkillTypes
-  mode: SkillModes = SkillModes.ACTIVE
-  releaseMode: SkillReleaseModes = SkillReleaseModes.DIRECT
+export interface SkillOptions {
+  id?: string
+  name?: string
+  descriptions?: string
+  shortcutKey?: string
 
-  /** 技能攻击范围 */
-  attackRange = 10
-  /** 技能释放/起手时间 */
-  releaseTime = 0
+  type?: SkillTypes
+  mode?: SkillModes
 
-  /** @todo - default value */
-  icon!: ImageResource
-  name = 'Default'
-  description = 'Default'
+  range?: number
+  attackLimit?: number
+  releaseDuration?: number
+  cooldown?: number
+  consume?: number
 
-  parent: GameObject | null = null
+  effects: Array<(gameObject: GameObject, skill: Skill) => void>
 
-  constructor ({ conditions, actions, id, ...options }: SkillOptions) {
-    super({ conditions, actions, once: true, id })
-    // for (const [key, value] of Object.entries(LevelNumeric.Level1)) {
-    //   // @ts-expect-error stable-type-here
-    //   this[key] = value
-    // }
-    // type === 'Tower' ? this.initTower() : this.initEnemy()
+  /**
+   * 被动技能执行函数
+   */
+  execSkill?: (context: Context, skill: Skill) => void
+}
 
+// @todo - 技能可使用/学习条件等
+export class Skill {
+  id = createRandomId('Skill')
+  name = createRandomId('Unnamed_skill')
+  descriptions = ''
+  shortcutKey?: string
+
+  // 技能类型
+  type = SkillTypes.PHYSICAL_ATTACK
+  // 技能模式
+  mode = SkillModes.ACTIVE
+
+  state = SkillState.ALREADY
+
+  // 攻击范围
+  range = 1
+  // 攻击数量
+  attackLimit = 1
+  // 释放时间/起手时间
+  releaseDuration = 0
+  // 技能冷却时间
+  cooldown = 0
+  // 技能消耗
+  consume: ConsumeType = [0, 0, undefined]
+  // 攻击倍率
+  attackMultiplier = 1
+
+  // 技能所有者
+  owner: GameObject | null = null
+
+  // 技能效果
+  effects: Array<(target: GameObject, skill: Skill) => void> = []
+
+  // 被动技能触发函数
+  execSkill!: (context: Context, skill: Skill) => void
+
+  timer = 0
+  startTime = 0
+
+  cooldownProgress = 0
+
+  constructor (options: SkillOptions) {
     Object.assign(this, options)
 
-    this.id = id ?? createRandomId('SkillGameObject')
+    if (typeof options.execSkill === 'function') {
+      this.execSkill = (context: Context, skill: Skill) => {
+        if (this.mode !== SkillModes.PASSIVE) return
+        options.execSkill!(context, skill)
+      }
+    }
   }
 
-  init (gameObject: GameObject) {
-    // 对象装备技能
-    gameObject.skills.add(this)
+  init (owner: GameObject) {
+    this.owner = owner
+    owner.skills.set(this.id, this)
   }
 
-  initTower () {
-    //
+  setState (state: SkillState) {
+    this.state = state
   }
 
-  initEnemy () {
-    //
+  /**
+   * 检测技能是否可释放
+   * @param target - 攻击目标
+   */
+  isReleasable (target: GameObject): boolean {
+    const { owner, state, range } = this
+
+    if (!owner) return false
+
+    return state === SkillState.ALREADY &&
+      owner.shape.isEntered(target.shape, range) &&
+      this.detectConsume()
   }
 
-  generateBullet (enemy: EnemyGameObject) {
-    // this.triggers.add(new Trigger({
-    //   conditions: [
-    //     (_gameObject, trigger) => trigger.isTimeout(1000),
-    //     () => !enemy.shape.isEntered(this.shape)
-    //   ],
-    //   actions: [
-    //     new IntervalAction<ActionTypes.CREATE>({
-    //       interval: 1000,
-    //       type: ActionTypes.CREATE,
-    //       callback () {
-    //         // const bullet = new BulletGameObject()
+  /**
+   * 检测技能消耗
+   */
+  detectConsume (): boolean {
+    const {
+      consume: [magicPoint, healthPoint, specialConsume],
+      owner
+    } = this
 
-    //         // console.log(bullet)
-    //       }
-    //     })
-    //   ]
-    // }))
+    if (!owner) return false
+
+    const {
+      props: {
+        magicPoint: { current: currentMagicPoint },
+        healthPoint: { current: currentHealthPoint }
+      }
+    } = owner
+
+    return currentMagicPoint >= magicPoint &&
+      currentHealthPoint >= healthPoint &&
+      (typeof specialConsume?.detectFn === 'function' ? specialConsume.detectFn(owner) : true)
+  }
+
+  /**
+   * 进行技能消耗
+   */
+  doConsume () {
+    const {
+      consume: [magicPoint, healthPoint, specialConsume],
+      owner
+    } = this
+
+    if (!owner) {
+      return
+    }
+
+    owner.doConsume('magicPoint', magicPoint)
+    owner.doConsume('healthPoint', healthPoint)
+    specialConsume?.consumeFn(owner)
+  }
+
+  async release (target: GameObject) {
+    if (this.isReleasable(target)) {
+      // 1. 技能起手等待
+      this.setState(SkillState.RELEASING)
+      await sleep(this.releaseDuration)
+
+      // 2. 执行技能效果
+      this.effects.forEach(effectFn => { effectFn(target, this) })
+
+      // 3. 执行完毕后结算消耗
+      this.doConsume()
+
+      // 4. 进入冷却状态，启动冷却计时器
+      this.setState(SkillState.COOLING)
+      this.startTime = new Date().getTime()
+      this.runTimer()
+    }
+  }
+
+  runTimer () {
+    this.timer = requestAnimationFrame(this.runTimer.bind(this))
+    this.cooldownProgress = (new Date().getTime() - this.startTime) / this.cooldown
+
+    if (this.cooldownProgress >= 1) {
+      this.setState(SkillState.ALREADY)
+      this.stopTimer()
+    }
+  }
+
+  stopTimer () {
+    cancelAnimationFrame(this.timer)
   }
 }

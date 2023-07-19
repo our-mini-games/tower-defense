@@ -3,17 +3,23 @@
  */
 
 import { type ActionTypes, GameObjectTypes, ShapeTypes } from '../../config'
-import type { Coordinate, ImageResource } from '../../types'
-import { createRandomId, move } from '../../utils/tools'
+import type { Coordinate, Energy, ImageResource } from '../../types'
+import { createRandomId } from '../../utils/tools'
 import type { Action } from '../action'
 import { BaseModule } from '../base'
+import { type Context } from '../centralControlSystem'
 import { RectangleShape, Shape, type ShapeOptions } from '../shape'
-import type { Skill, Trigger } from '../trigger'
+import { type Skill, type Trigger } from '../trigger'
+// import { BulletGameObject, type BulletGameObjectOptions } from './Bullet'
+// import { EnemyGameObject, type EnemyGameObjectOptions } from './Enemy'
+// import { SkillGameObject, type SkillGameObjectOptions } from './Skill'
+// import { TowerGameObject, type TowerGameObjectOptions } from './Tower'
 
 export interface GameObjectOptions {
   id?: string
   type: GameObjectTypes
   shape?: Shape
+  props?: Partial<GameObjectProps>
 }
 
 export interface PointGameObjectOptions {
@@ -27,6 +33,32 @@ export interface AreaGameObjectOptions {
   models?: ImageResource[]
 }
 
+export interface GameObjectProps {
+  speed: number
+  healthPoint: Energy
+  magicPoint: Energy
+  physicalAttack: number
+  magicalAttack: number
+  physicalDefense: number
+  magicalDefense: number
+  attackSpeed: number
+  releaseSpeed: number
+}
+
+export const createDefaultGameObjectProps = (): GameObjectProps => {
+  return {
+    speed: 0,
+    healthPoint: { current: 1, max: 1 },
+    magicPoint: { current: 1, max: 1 },
+    physicalAttack: 1,
+    magicalAttack: 1,
+    physicalDefense: 1,
+    magicalDefense: 1,
+    attackSpeed: 1,
+    releaseSpeed: 1
+  }
+}
+
 export class GameObject extends BaseModule {
   id = createRandomId('GameObject')
 
@@ -35,7 +67,10 @@ export class GameObject extends BaseModule {
   data = []
   triggerIds = new Set<string>()
   actions = new Map<ActionTypes, Action>()
-  parentCollection?: Map<string, GameObject>
+
+  props = createDefaultGameObjectProps()
+
+  skills = new Map<string, Skill>()
 
   skills = new Set<Skill>()
 
@@ -52,19 +87,25 @@ export class GameObject extends BaseModule {
     if (options.id) {
       this.id = options.id
     }
-  }
 
-  init (parentCollection: Map<string, GameObject>) {
-    if (parentCollection) {
-      this.parentCollection = parentCollection
-      parentCollection.set(this.id, this)
+    if (options.props) {
+      Object.assign(this.props, options.props)
     }
-    this.update(parentCollection)
   }
 
-  update (..._args: unknown[]) {
+  get isDead () {
+    return this.props.healthPoint.current <= 0
+  }
+
+  init (context: Context) {
+    context.gameObjects.set(this.id, this)
+    this.update(context)
+  }
+
+  update (context: Context) {
+    // 执行被动执行
     this.skills.forEach(skill => {
-      skill.fire(this)
+      skill.execSkill(context, skill)
     })
 
     this.shape.update()
@@ -74,20 +115,18 @@ export class GameObject extends BaseModule {
     })
   }
 
-  destroy () {
-    const { parentCollection } = this
+  destroy (context: Context) {
+    const parentCollection = context.gameObjects
 
-    if (parentCollection) {
-      let delKey = ''
+    let delKey = ''
 
-      parentCollection.forEach((val, key) => {
-        if (val === this) {
-          delKey = key
-        }
-      })
-      if (delKey) {
-        return parentCollection.delete(delKey)
+    parentCollection.forEach((val, key) => {
+      if (val === this) {
+        delKey = key
       }
+    })
+    if (delKey) {
+      return parentCollection.delete(delKey)
     }
 
     return false
@@ -104,11 +143,12 @@ export class GameObject extends BaseModule {
   bindTrigger (trigger: Trigger) {
     const { triggerIds } = this
 
-    if (!triggerIds.has(trigger.id)) {
-      trigger.actions.forEach(action => {
-        this.loadAction(action.type, action)
-      })
-    }
+    // @todo
+    // if (!triggerIds.has(trigger.id)) {
+    //   trigger.actions.forEach(action => {
+    //     this.loadAction(action.type, action)
+    //   })
+    // }
 
     triggerIds.add(trigger.id)
   }
@@ -117,12 +157,21 @@ export class GameObject extends BaseModule {
     this.triggerIds.delete(triggerId)
   }
 
+  learnSkill (skill: Skill) {
+    skill.init(this)
+    this.skills.set(skill.id, skill)
+  }
+
+  removeSkill (skill: Skill | string) {
+    this.skills.delete(typeof skill === 'string' ? skill : skill.id)
+  }
+
   moveTo (target: GameObject) {
     const {
       shape: {
         midpoint: { x: x1, y: y1 }
       },
-      speed
+      props: { speed }
     } = this
     const {
       shape: {
@@ -134,40 +183,35 @@ export class GameObject extends BaseModule {
       return
     }
 
-    const { x, y } = move(x1, y1, x2, y2, speed)
+    const vectorX = x2 - x1
+    const vectorY = y2 - y1
+    const magnitude = Math.sqrt(vectorX * vectorX + vectorY * vectorY)
 
-    this.shape.setMidpoint(x, y)
+    const unitVectorX = vectorX / magnitude
+    const unitVectorY = vectorY / magnitude
 
-    // if (x1 === x2) {
-    //   this.shape.setMidpoint(
-    //     x1,
-    //     y1 > y2
-    //       ? Math.max(y2, y1 - speed)
-    //       : Math.min(y2, y1 + speed)
-    //   )
+    const newX = speed * unitVectorX
+    const newY = speed * unitVectorY
 
-    //   return
-    // }
+    this.shape.setMidpoint(x1 + newX, y1 + newY)
+  }
 
-    // if (y1 === y2) {
-    //   this.shape.setMidpoint(
-    //     x1 > x2
-    //       ? Math.max(x2, x1 - speed)
-    //       : Math.min(x2, x1 + speed),
-    //     y1
-    //   )
+  /**
+   * 能量消耗/增加
+   */
+  doConsume (type: 'magicPoint' | 'healthPoint', value: number, action: 'increase' | 'decrease' = 'decrease') {
+    const { props: { magicPoint, healthPoint } } = this
 
-    //   return
-    // }
+    const base = action === 'increase' ? 1 : -1
 
-    // this.shape.setMidpoint(
-    //   x1 > x2
-    //     ? Math.max(x2, x1 - speed)
-    //     : Math.min(x2, x1 + speed),
-    //   y1 > y2
-    //     ? Math.max(y2, y1 - speed)
-    //     : Math.min(y2, y1 + speed)
-    // )
+    switch (type) {
+      case 'magicPoint':
+        magicPoint.current = Math.min(magicPoint.max, Math.max(0, magicPoint.current + base * value))
+        break
+      case 'healthPoint':
+        healthPoint.current = Math.min(healthPoint.max, Math.max(0, healthPoint.current + base * value))
+        break
+    }
   }
 
   static isEnemy (gameObject: GameObject) {

@@ -1,111 +1,232 @@
 import { GameObjectTypes } from '../../config'
-import type { Coordinate, ImageResource } from '../../types'
-import { createRandomId } from '../../utils/tools'
-import { Shape, type ShapeOptions } from '../shape'
-import { GameObject } from './GameObject'
+import type { Coordinate } from '../../types'
+import { isCollision } from '../../utils/detect'
+import { calcHypotenuse, copyMidpoint, createRandomId } from '../../utils/tools'
+import { type Context } from '../centralControlSystem'
+import { type Skill } from '../trigger'
+import { GameObject, type GameObjectOptions, PointGameObject } from './GameObject'
 
-export interface BulletGameObjectOptions {
-  id?: string
-  shapeOptions: ShapeOptions
-  model?: ImageResource[]
+export interface BulletGameObjectOptions extends Omit<GameObjectOptions, 'type'> {
   target: GameObject
-  speed?: number
-  range?: number
-  duration: number
-  onIntersection?: typeof destroyBullet
-  onReached?: typeof destroyBullet
-  // onOutOfRange?: typeof destroyBullet
-}
+  owner: Skill
 
-const destroyBullet = (bullet: BulletGameObject, _gameObject?: GameObject) => {
-  bullet.destroy()
+  basePhysicalDamage?: number
+  baseMagicDamage?: number
+  speed?: number
+  attackLimit?: number
+  survivalTime?: number
+  maxRange?: number
+
+  /** 当子弹与敌对单位交叉/碰撞时，应当如何 */
+  onCollision?: (collisionTarget: GameObject, bullet: BulletGameObject) => void
+  /** 当子弹抵达目的地时，应当如何 */
+  onReachTarget?: (target: GameObject, bullet: BulletGameObject) => void
+  /** 当子弹超出范围时，应当如何 */
+  onOverRange?: (bullet: BulletGameObject) => void
+  /** 当子弹超出存活时间时，应当如何 */
+  onOverTime?: (bullet: BulletGameObject) => void
+  /** 当子弹超出攻击上限时，应当如何 */
+  onAttackUpperLimit?: (bullet: BulletGameObject) => void
+  /** 当目标消失/死亡，应当如何？回收 or 继续攻击目标死亡的地方？ */
+  onTargetDisappear?: (bullet: BulletGameObject) => void
 }
 
 export class BulletGameObject extends GameObject {
-  // 当子弹与对象相交时，应该做什么动作
-  onIntersection = destroyBullet
-  // 当子弹抵达终点时，应该做什么动作
-  onReached = destroyBullet
-  // 当子弹超出攻击范围时，应该做什么动作
-  // onOutOfRange = destroyBullet
+  id = createRandomId('Bullet')
 
-  // 子弹攻击的目标
+  // 子弹的基础伤害
+  basePhysicalDamage = 1
+  baseMagicDamage = 1
+
+  // 攻击上限
+  attackLimit = 1
+
+  // 子弹存活时间
+  survivalTime = Infinity
+  // 子弹攻击范围
+  maxRange = Infinity
+
+  // 攻击行为
+  /** 当子弹与敌对单位交叉/碰撞时，应当如何 */
+  onCollision: BulletGameObjectOptions['onCollision']
+  /** 当子弹抵达目的地时，应当如何 */
+  onReachTarget: BulletGameObjectOptions['onReachTarget']
+  /** 当子弹超出范围时，应当如何 */
+  onOverRange: BulletGameObjectOptions['onOverRange']
+  /** 当子弹超出存活时间时，应当如何 */
+  onOverTime: BulletGameObjectOptions['onOverTime']
+  /** 当子弹超出攻击上限时，应当如何 */
+  onAttackUpperLimit: BulletGameObjectOptions['onAttackUpperLimit']
+  /** 当目标消失/死亡，应当如何？回收 or 继续攻击目标死亡的地方？ */
+  onTargetDisappear: BulletGameObjectOptions['onTargetDisappear']
+
+  startTime = new Date().getTime()
+  startCoordination: Coordinate = { x: 0, y: 0 }
+
   target!: GameObject
-  // 子弹的移动速度
-  speed = Infinity
-  // 子弹的攻击范围
-  range = Infinity
-  // 攻击数量上限
-  max = Infinity
-  // 子弹持续时间
-  duration = Infinity
-
-  // 已攻击对象，同一个子弹无法对同一个对象造成多次伤害
-  attackedTargets = new Set<GameObject>()
-
-  initialMidpoint: Coordinate = { x: 0, y: 0 }
-  createdTime = new Date().getTime()
+  owner!: Skill
 
   constructor ({
-    id,
-    shapeOptions,
-    model,
-    ...options
+    target,
+    owner,
+
+    basePhysicalDamage = 1,
+    baseMagicDamage = 1,
+    speed = 1,
+    attackLimit = 1,
+    survivalTime = Infinity,
+    maxRange = Infinity,
+
+    onCollision,
+    onReachTarget,
+    onOverRange,
+    onOverTime,
+    onAttackUpperLimit,
+    onTargetDisappear,
+    ...gameObjectOptions
   }: BulletGameObjectOptions) {
     super({
-      type: GameObjectTypes.BULLET,
-      shape: new Shape(shapeOptions, model)
+      ...gameObjectOptions,
+      props: { ...gameObjectOptions.props, speed },
+      type: GameObjectTypes.BULLET
     })
 
-    Object.assign(this, options)
+    this.startCoordination = {
+      x: gameObjectOptions.shape?.midpoint.x ?? 0,
+      y: gameObjectOptions.shape?.midpoint.y ?? 0
+    }
 
-    this.id = id ?? createRandomId('Bullet')
-    this.initialMidpoint = { x: shapeOptions.midpoint.x, y: shapeOptions.midpoint.y }
+    Object.assign(this, {
+      target,
+      owner,
+
+      basePhysicalDamage,
+      baseMagicDamage,
+      speed,
+      attackLimit,
+      survivalTime,
+      maxRange,
+
+      onCollision,
+      onReachTarget,
+      onOverRange,
+      onOverTime,
+      onAttackUpperLimit,
+      onTargetDisappear
+    })
   }
 
-  get displacementDistance () {
+  get isOverTime () {
+    return (new Date().getTime() - this.startTime) >= this.survivalTime
+  }
+
+  get isOverRange () {
     const {
-      initialMidpoint: { x: x1, y: y1 },
+      startCoordination,
       shape: {
-        midpoint: { x: x2, y: y2 }
-      }
+        midpoint
+      },
+      maxRange
     } = this
 
-    return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+    return calcHypotenuse(startCoordination, midpoint) > maxRange
   }
 
-  get attackedSize () {
-    return this.attackedTargets.size
+  get isReachTarget () {
+    const { target, shape: { midpoint } } = this
+
+    if (!target) return
+
+    return calcHypotenuse(target.shape.midpoint, midpoint) <= 2
   }
 
-  update (gameObjects: Map<string, GameObject>) {
-    this.moveTo(this.target)
+  init (context: Context) {
+    context.bullets.set(this.id, this)
+    this.update(context)
+  }
 
-    // 子弹超出持续时间，直接回收
-    if (new Date().getTime() - this.createdTime >= this.duration) {
-      this.destroy()
+  update (context: Context) {
+    this.shape.update()
 
-      return
-    }
-
-    if (this.isOutOfRange()) {
-      this.destroy()
-
-      return
-    }
-
-    if (this.isReached()) {
-      this.onReached(this)
+    if (this.isOverTime) {
+      this.onOverTime?.(this)
+      this.destroy(context)
 
       return
     }
 
-    gameObjects.forEach(gameObject => {
-      if (this.isIntersection(gameObject) && this.attackedSize < this.max) {
-        this.onIntersection(this, gameObject)
-        this.attackedTargets.add(gameObject)
+    if (this.isOverRange) {
+      this.onOverRange?.(this)
+      this.destroy(context)
+
+      return
+    }
+
+    if (this.isReachTarget) {
+      this.onReachTarget?.(this.target, this)
+      this.destroy(context)
+
+      return
+    }
+
+    context.gameObjects.forEach(gameObject => {
+      if (this.attackLimit > 0) {
+        if (GameObject.isEnemy(gameObject) && isCollision(this, gameObject)) {
+          this.attackLimit--
+          this.onCollision?.(gameObject, this)
+        }
+      } else {
+        this.onAttackUpperLimit?.(this)
       }
     })
+
+    if (this.target.isDead) {
+      this.onTargetDisappear?.(this)
+    }
+
+    // 子弹的默认行为，攻击指定目标
+    this.moveTo(this.target)
+  }
+
+  // 伤害算法
+  damageCalculation (): number {
+    // (对象的攻击力 - 目标的防御力) * 基础伤害值 * 技能攻击倍率
+    const {
+      owner: skill,
+      target,
+      basePhysicalDamage,
+      baseMagicDamage
+    } = this
+
+    if (!skill || !target) return 0
+
+    const { owner: gameObject } = skill
+
+    if (!gameObject) return 0
+
+    const physicalDamage = (
+      (gameObject.props.physicalAttack - target.props.physicalDefense) *
+      basePhysicalDamage *
+      skill.attackMultiplier
+    )
+
+    const magicalDamage = (
+      (gameObject.props.magicalAttack - target.props.magicalDefense) *
+      baseMagicDamage *
+      skill.attackMultiplier
+    )
+
+    return Math.max(0, physicalDamage) + Math.max(magicalDamage)
+  }
+
+  // 攻击目标死亡的地方
+  attackTargetDeadArea () {
+    this.target = new PointGameObject({ point: copyMidpoint(this.target) })
+  }
+
+  // 回收子弹
+  destroy (context: Context) {
+    return context.bullets.delete(this.id)
   }
 
   isOutOfRange () {

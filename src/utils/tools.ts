@@ -1,4 +1,6 @@
-import type { GameObject } from '../modules/gameObject'
+import { ShapeTypes } from '../config'
+import { type GameObject } from '../modules/gameObject'
+import { type Shape } from '../modules/shape'
 import type { Coordinate, ImageResource, Resource } from '../types'
 
 interface Rect extends Coordinate {
@@ -79,23 +81,35 @@ export const convertSeconds = (input = 0): [string, string, string] => {
   ]
 }
 
-export const cloneMidpoint = (gameObject: GameObject) => {
-  const {
-    shape: {
-      midpoint: { x, y }
-    }
-  } = gameObject
+export const sleep = (delay: number) => new Promise(resolve => setTimeout(resolve, delay))
 
-  return { x, y }
+// 计算两点之间的距离 / 直角三角线斜边长度
+export const calcHypotenuse = ({ x: x1, y: y1 }: Coordinate, { x: x2, y: y2 }: Coordinate) => {
+  return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 }
 
-export const move = (x1: number, y1: number, x2: number, y2: number, distance: number): Coordinate => {
-  const angle = Math.atan2(y2 - y1, x2 - x1)
-  const newX = x1 + distance * Math.cos(angle)
-  const newY = y1 + distance * Math.sin(angle)
+export const copyMidpoint = ({ shape: { midpoint: { x, y } } }: GameObject) => ({ x, y })
 
-  return {
-    x: Math.round(newX),
-    y: Math.round(newY)
+export const getRectVertexes = ({
+  type,
+  midpoint: { x, y },
+  width,
+  height
+}: Shape): [Coordinate, Coordinate, Coordinate, Coordinate] => {
+  if (type !== ShapeTypes.RECTANGLE) {
+    throw new TypeError(`Except a rectangle shape, but got "${type}"`)
   }
+
+  // 矩形顶点
+  const leftX = x - width / 2
+  const rightX = x + width / 2
+  const topY = y - height / 2
+  const bottomY = y + height / 2
+
+  return [
+    { x: leftX, y: topY },
+    { x: rightX, y: topY },
+    { x: rightX, y: bottomY },
+    { x: leftX, y: bottomY }
+  ]
 }

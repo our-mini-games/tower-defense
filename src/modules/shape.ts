@@ -1,6 +1,6 @@
 import { ShapeTypes } from '../config'
 import type { Coordinate, ImageResource } from '../types'
-import { isSamePoint } from '../utils/check'
+import { isSamePoint } from '../utils/detect'
 import { BaseModule } from './base'
 
 export interface ShapeOptions {
@@ -78,7 +78,7 @@ export class Shape extends BaseModule {
   }
 
   // 检测当前图形是否与参数图形相交
-  isEntered (targetShape: Shape) {
+  isEntered (targetShape: Shape, range = 2) {
     const {
       midpoint: { x: x1, y: y1 }
     } = this
@@ -86,7 +86,7 @@ export class Shape extends BaseModule {
       midpoint: { x: x2, y: y2 }
     } = targetShape
 
-    return Math.abs(x1 - x2) <= 2 && Math.abs(y1 - y2) <= 2
+    return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) <= range
 
     // const {
     //   midpoint: { x: x1, y: y1 },
