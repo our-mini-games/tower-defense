@@ -1,103 +1,173 @@
 import './assets/style.css'
 
-import { TechnologyPanelRenderer } from './modules'
-import { type GameObject } from './modules/gameObject'
-import { TowerGameObject } from './modules/gameObject/Tower'
-import { loadImages } from './utils/tools'
-// import { StatisticsPanelRenderer } from './modules'
-// import { CentralControlSystem } from './modules/centralControlSystem'
+import { RendererTypes, ShapeTypes, SkillModes } from './config'
+import { MainRenderer, Skill, type Trigger } from './modules'
+import { type Renderer } from './modules/base'
+import { type Context } from './modules/centralControlSystem'
+import { EnemyGameObject, GameObject, TowerGameObject } from './modules/gameObject'
+import { BulletGameObject } from './modules/gameObject/Bullet'
+import { Shape } from './modules/shape'
+import { copyMidpoint } from './utils/tools'
 
 const app = document.querySelector<HTMLElement>('#app')!
 
-// const system = new CentralControlSystem(app)
-
-// system.init()
-//   .then(() => {
-//     system.run()
-//   })
-
-// const oBtn = document.createElement('button')
-
-// oBtn.innerHTML = 'PAUSE'
-// oBtn.addEventListener('click', () => {
-//   system.pause()
-// })
-
-// oBtn.style.cssText = `
-//   position: absolute;
-//   right: 0;
-//   top: 0;
-// `
-
-// app.appendChild(oBtn)
-
-// const statisticsPanelRenderer = new StatisticsPanelRenderer({
-//   width: 48 * 14,
-//   height: 48
-// })
-
-// await statisticsPanelRenderer.init()
-
-// statisticsPanelRenderer.mount(app, {
-//   // backgroundColor: 'rgba(0, 192, 168, 0.2)'
-//   border: '1px solid #abc'
-// })
-
-// statisticsPanelRenderer.draw({
-//   elapseTime: 4096,
-//   restHealth: 75,
-//   goldAmount: 10086
-// })
-
-const technologyPanelRenderer = new TechnologyPanelRenderer({
-  width: 48 * 4,
-  height: 48 * 2
-})
-
-await technologyPanelRenderer.init()
-const towerModels = await loadImages([
-  {
-    name: 'tower1',
-    width: 48,
-    height: 48,
-    src: '/tower-warrior.svg'
+const tower = new TowerGameObject({
+  shapeOptions: {
+    midpoint: { x: 200, y: 100 },
+    width: 50,
+    height: 50,
+    fillStyle: 'blue'
   },
-
-  {
-    name: 'tower2',
-    width: 48,
-    height: 48,
-    src: '/tower-mage.svg'
-  },
-
-  {
-    name: 'tower3',
-    width: 48,
-    height: 48,
-    src: '/tower-archer.svg'
+  props: {
+    healthPoint: { current: 1000, max: 1000 },
+    magicPoint: { current: 1000, max: 1000 }
   }
-])
-
-technologyPanelRenderer.mount(app, {
-  // backgroundColor: 'rgba(0, 192, 168, 0.2)'
-  border: '1px solid #abc'
+})
+const enemy = new EnemyGameObject({
+  shapeOptions: {
+    midpoint: { x: 50, y: 50 },
+    width: 30,
+    height: 30,
+    fillStyle: 'red'
+  }
 })
 
-const gameObjects = new Map<string, GameObject>()
+const enemy2 = new EnemyGameObject({
+  shapeOptions: {
+    midpoint: { x: 150, y: 50 },
+    width: 30,
+    height: 30,
+    fillStyle: 'red'
+  }
+})
 
-for (let i = 0; i < 3; i++) {
-  new TowerGameObject({
-    id: `tower-${i + 1}`,
-    shapeOptions: {
-      midpoint: {
-        x: 12 * (i + 1) + 48 * i + 48 / 2,
-        y: technologyPanelRenderer.height / 2
-      },
-      width: 48,
-      height: 48
-    },
-    models: [towerModels[i]]
-  }).init(gameObjects)
+const renderer = new MainRenderer({
+  width: 400,
+  height: 400
+})
+
+const context: Context = {
+  gameObjects: new Map([[tower.id, tower], [enemy.id, enemy]]),
+  bullets: new Map<string, BulletGameObject>(),
+  triggers: new Set<Trigger>(),
+  eventPool: {},
+  renderers: new Map<RendererTypes, Renderer>([[RendererTypes.MAIN, renderer]]),
+  timers: new Map<string, any>(),
+  variables: new Map<string, any>(),
+  terrains: new Map<string, any>()
 }
 
-technologyPanelRenderer.draw(gameObjects)
+const skill = new Skill({
+  name: '普通攻击',
+  mode: SkillModes.PASSIVE,
+  range: 1000,
+  releaseDuration: 200,
+  cooldown: 1000,
+
+  effects: [
+    (target, skill) => {
+      const bullet = new BulletGameObject({
+        target,
+        owner: skill,
+        shape: new Shape({
+          type: ShapeTypes.CIRCLE,
+          width: 4,
+          height: 4,
+          radius: 2,
+          midpoint: copyMidpoint(skill.owner!),
+          fillStyle: '#000'
+        }),
+        speed: 1,
+        // survivalTime: 300,
+        maxRange: 1000,
+
+        onReachTarget: (target) => {
+          console.log(target)
+          target.destroy(context)
+        },
+
+        onCollision: (collisionTarget, bullet) => {
+          console.log('collision:', collisionTarget, bullet)
+          collisionTarget.destroy(context)
+        },
+
+        onOverTime: (bullet) => {
+          console.log('overTime')
+          // bullet.destroy(context)
+        },
+
+        onOverRange: (bullet) => {
+          console.log('overRange')
+          // bullet.destroy()
+        },
+
+        onAttackUpperLimit: (bullet) => {
+          console.log('upper limit')
+          bullet.destroy(context)
+        },
+
+        onTargetDisappear: (bullet) => {
+          console.log('target dead!')
+        }
+      })
+
+      bullet.init(context)
+    }
+  ],
+
+  execSkill: (context, skill) => {
+    console.log(1)
+    context.gameObjects.forEach(gameObject => {
+      if (GameObject.isEnemy(gameObject)) {
+        skill.release(gameObject)
+      }
+    })
+  }
+})
+
+tower.init(context)
+enemy.init(context)
+enemy2.init(context)
+skill.init(tower)
+
+renderer.init()
+renderer.mount(app, {
+  border: '1px solid #ddd'
+})
+
+console.log(tower)
+
+let t = 0
+
+function run () {
+  t = requestAnimationFrame(run)
+
+  // console.log(context)
+
+  // skill.release(enemy)
+
+  renderer.clear()
+
+  context.gameObjects.forEach(gameObject => {
+    gameObject.update(context)
+    renderer.draw(gameObject)
+  })
+  context.bullets.forEach(bullet => {
+    bullet.update(context)
+    renderer.draw(bullet)
+  })
+}
+
+// renderer.draw(tower)
+// renderer.draw(enemy)
+run()
+
+const oBtn = document.createElement('button')
+
+oBtn.textContent = 'Click'
+
+oBtn.addEventListener('click', () => {
+  cancelAnimationFrame(t)
+})
+
+app.appendChild(oBtn)

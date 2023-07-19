@@ -1,19 +1,12 @@
+import { ShapeTypes } from '../config'
+import { type GameObject } from '../modules/gameObject'
+import { type Shape } from '../modules/shape'
 import type { Coordinate, ImageResource, Resource } from '../types'
 
 interface Rect extends Coordinate {
   width: number
   height: number
 }
-
-export const isSamePoint = ({ x: x1, y: y1 }: Coordinate, { x: x2, y: y2 }: Coordinate) => x1 === x2 && y1 === y2
-
-export const getObjectTypeStr = (val: unknown) => {
-  return Object.prototype.toString.call(val)
-}
-
-export const isObject = (val: unknown) => getObjectTypeStr(val) === '[object Object]'
-
-export const isArray = (val: unknown) => getObjectTypeStr(val) === '[object Array]'
 
 /**
  * 计算两个矩形的重叠率
@@ -85,5 +78,38 @@ export const convertSeconds = (input = 0): [string, string, string] => {
     `${Math.floor(input / 60 / 60)}`.padStart(2, '0'),
     `${Math.floor(rest / 60)}`.padStart(2, '0'),
     `${rest % 60}`.padStart(2, '0')
+  ]
+}
+
+export const sleep = (delay: number) => new Promise(resolve => setTimeout(resolve, delay))
+
+// 计算两点之间的距离 / 直角三角线斜边长度
+export const calcHypotenuse = ({ x: x1, y: y1 }: Coordinate, { x: x2, y: y2 }: Coordinate) => {
+  return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+}
+
+export const copyMidpoint = ({ shape: { midpoint: { x, y } } }: GameObject) => ({ x, y })
+
+export const getRectVertexes = ({
+  type,
+  midpoint: { x, y },
+  width,
+  height
+}: Shape): [Coordinate, Coordinate, Coordinate, Coordinate] => {
+  if (type !== ShapeTypes.RECTANGLE) {
+    throw new TypeError(`Except a rectangle shape, but got "${type}"`)
+  }
+
+  // 矩形顶点
+  const leftX = x - width / 2
+  const rightX = x + width / 2
+  const topY = y - height / 2
+  const bottomY = y + height / 2
+
+  return [
+    { x: leftX, y: topY },
+    { x: rightX, y: topY },
+    { x: rightX, y: bottomY },
+    { x: leftX, y: bottomY }
   ]
 }

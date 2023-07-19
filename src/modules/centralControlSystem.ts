@@ -8,7 +8,19 @@ import { loadImage } from '../utils/tools'
 import { Action, IntervalAction } from './action'
 import { BaseModule, type Renderer } from './base'
 import { GameObject } from './gameObject'
+import type { BulletGameObject } from './gameObject/Bullet'
 import { Trigger } from './trigger'
+
+export interface Context {
+  gameObjects: Map<string, GameObject>
+  bullets: Map<string, BulletGameObject>
+  triggers: Set<Trigger>
+  eventPool: any
+  renderers: Map<RendererTypes, Renderer>
+  timers: Map<string, any>
+  variables: Map<string, any>
+  terrains: Map<string, any>
+}
 
 export class CentralControlSystem extends BaseModule {
   data = null

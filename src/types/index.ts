@@ -20,3 +20,9 @@ export interface ImageResource extends Omit<Resource, 'src'> {
 }
 
 export const NOOP = () => { return null }
+
+/** 能量 */
+export interface Energy {
+  current: number
+  max: number
+}

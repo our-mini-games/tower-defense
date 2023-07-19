@@ -2,12 +2,13 @@ import { GameObjectTypes } from '../../config'
 import type { ImageResource } from '../../types'
 import { createRandomId } from '../../utils/tools'
 import { RectangleShape, type ShapeOptions } from '../shape'
-import { GameObject } from './GameObject'
+import { GameObject, type GameObjectProps } from './GameObject'
 
 export interface TowerGameObjectOptions {
   id?: string
   shapeOptions: Omit<ShapeOptions, 'type'>
   models?: ImageResource[]
+  props?: Partial<GameObjectProps>
 }
 
 export class TowerGameObject extends GameObject {
@@ -16,11 +17,13 @@ export class TowerGameObject extends GameObject {
   constructor ({
     id,
     shapeOptions,
-    models = []
+    models = [],
+    props
   }: TowerGameObjectOptions) {
     super({
       type: GameObjectTypes.TOWER,
-      shape: new RectangleShape(shapeOptions, models)
+      shape: new RectangleShape(shapeOptions, models),
+      props
     })
 
     if (id) {
