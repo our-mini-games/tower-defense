@@ -228,4 +228,28 @@ export class BulletGameObject extends GameObject {
   destroy (context: Context) {
     return context.bullets.delete(this.id)
   }
+
+  isOutOfRange () {
+    const {
+      displacementDistance,
+      range
+    } = this
+
+    return range < displacementDistance
+  }
+
+  isReached () {
+    const {
+      displacementDistance,
+      range
+    } = this
+
+    return Math.abs(range - displacementDistance) <= 2
+  }
+
+  isIntersection (gameObject: GameObject): boolean {
+    if (gameObject.type !== GameObjectTypes.ENEMY) return false
+
+    return this.shape.isEntered(gameObject.shape)
+  }
 }

@@ -1,4 +1,4 @@
-import type { ImageResource } from '../types'
+import type { Coordinate, ImageResource } from '../types'
 
 export function drawHeart (
   ctx: CanvasRenderingContext2D,
@@ -63,4 +63,65 @@ export function getRoundedResource (resource: ImageResource, radii: number | num
     height,
     img: canvas
   }
+}
+
+/**
+ * 一个右键点击小动画
+ */
+export function drawCrystalAnimation (
+  resource: ImageResource,
+  ctx: CanvasRenderingContext2D,
+  { x, y }: Coordinate
+) {
+  let i = 0
+  let rafId = 0
+
+  function draw () {
+    ctx.save()
+
+    // set midpoint
+    ctx.translate(x, y)
+
+    // set scale
+    ctx.scale(i, i)
+
+    ctx.beginPath()
+    ctx.ellipse(0, 0, 16, 8, 0, 0, Math.PI * 2)
+    const gradient = ctx.createRadialGradient(0, 0, 8, 0, 0, 16)
+
+    gradient.addColorStop(0, '#fff')
+    gradient.addColorStop(1, '#53E0BB')
+    ctx.fillStyle = gradient
+    ctx.fill()
+
+    ctx.resetTransform()
+
+    // set midpoint
+    ctx.translate(x, y - 24)
+
+    // set translate
+    ctx.translate(0, i * 10)
+
+    ctx.drawImage(resource.img, -resource.width / 2, -resource.height / 2, resource.width, resource.height)
+
+    ctx.restore()
+  }
+
+  function run () {
+    rafId = requestAnimationFrame(run)
+
+    ctx.clearRect(x - 24, y - 40, 48, 48)
+    if (i >= 1) {
+      cancelAnimationFrame(rafId)
+
+      return
+    }
+
+    ctx.clearRect(x - 24, y - 24, 48, 48)
+    draw()
+
+    i += 0.05
+  }
+
+  run()
 }
