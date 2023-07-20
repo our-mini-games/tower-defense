@@ -72,8 +72,6 @@ export class GameObject extends BaseModule {
 
   skills = new Map<string, Skill>()
 
-  skills = new Set<Skill>()
-
   speed = 2
 
   constructor (options: GameObjectOptions) {
