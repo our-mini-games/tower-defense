@@ -200,18 +200,18 @@ export class BulletGameObject extends GameObject {
 
     if (!skill || !target) return 0
 
-    const { owner: gameObject } = skill
+    const { owner } = skill
 
-    if (!gameObject) return 0
+    if (!owner) return 0
 
     const physicalDamage = (
-      (gameObject.props.physicalAttack - target.props.physicalDefense) *
+      (owner.props.physicalAttack - target.props.physicalDefense) *
       basePhysicalDamage *
       skill.attackMultiplier
     )
 
     const magicalDamage = (
-      (gameObject.props.magicalAttack - target.props.magicalDefense) *
+      (owner.props.magicalAttack - target.props.magicalDefense) *
       baseMagicDamage *
       skill.attackMultiplier
     )
@@ -227,29 +227,5 @@ export class BulletGameObject extends GameObject {
   // 回收子弹
   destroy (context: Context) {
     return context.bullets.delete(this.id)
-  }
-
-  isOutOfRange () {
-    const {
-      displacementDistance,
-      range
-    } = this
-
-    return range < displacementDistance
-  }
-
-  isReached () {
-    const {
-      displacementDistance,
-      range
-    } = this
-
-    return Math.abs(range - displacementDistance) <= 2
-  }
-
-  isIntersection (gameObject: GameObject): boolean {
-    if (gameObject.type !== GameObjectTypes.ENEMY) return false
-
-    return this.shape.isEntered(gameObject.shape)
   }
 }

@@ -74,7 +74,7 @@ export class GameObject extends BaseModule {
 
   speed = 2
 
-  constructor (options: GameObjectOptions) {
+  constructor ({ id, props, ...options }: GameObjectOptions) {
     if (new.target === GameObject) {
       throw new Error('Cannot instantiate GameObject')
     }
@@ -82,12 +82,12 @@ export class GameObject extends BaseModule {
     super()
     Object.assign(this, options)
 
-    if (options.id) {
-      this.id = options.id
+    if (id) {
+      this.id = id
     }
 
-    if (options.props) {
-      Object.assign(this.props, options.props)
+    if (props) {
+      Object.assign(this.props, props)
     }
   }
 
@@ -101,6 +101,13 @@ export class GameObject extends BaseModule {
   }
 
   update (context: Context) {
+    // 检测当前对象是否已经空血
+    if (this.isDead) {
+      context.gameObjects.delete(this.id)
+
+      return
+    }
+
     // 执行被动执行
     this.skills.forEach(skill => {
       skill.execSkill(context, skill)
