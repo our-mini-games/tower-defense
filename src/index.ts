@@ -20,7 +20,8 @@ const tower = new TowerGameObject({
   },
   props: {
     healthPoint: { current: 1000, max: 1000 },
-    magicPoint: { current: 1000, max: 1000 }
+    magicPoint: { current: 1000, max: 1000 },
+    physicalAttack: 180
   }
 })
 const enemy = new EnemyGameObject({
@@ -29,6 +30,10 @@ const enemy = new EnemyGameObject({
     width: 30,
     height: 30,
     fillStyle: 'red'
+  },
+  props: {
+    healthPoint: { current: 1000, max: 1000 },
+    magicPoint: { current: 1000, max: 1000 }
   }
 })
 
@@ -38,6 +43,10 @@ const enemy2 = new EnemyGameObject({
     width: 30,
     height: 30,
     fillStyle: 'red'
+  },
+  props: {
+    healthPoint: { current: 1000, max: 1000 },
+    magicPoint: { current: 1000, max: 1000 }
   }
 })
 
@@ -82,13 +91,15 @@ const skill = new Skill({
         maxRange: 1000,
 
         onReachTarget: (target) => {
-          console.log(target)
-          target.destroy(context)
+          console.log('reach', target, bullet.damageCalculation())
+          // target.destroy(context)
+          target.doConsume('healthPoint', bullet.damageCalculation(), 'decrease')
         },
 
         onCollision: (collisionTarget, bullet) => {
-          console.log('collision:', collisionTarget, bullet)
-          collisionTarget.destroy(context)
+          console.log('collision:', collisionTarget, bullet, bullet.damageCalculation())
+          // collisionTarget.destroy(context)
+          collisionTarget.doConsume('healthPoint', bullet.damageCalculation(), 'decrease')
         },
 
         onOverTime: (bullet) => {
@@ -108,6 +119,7 @@ const skill = new Skill({
 
         onTargetDisappear: (bullet) => {
           console.log('target dead!')
+          bullet.destroy(context)
         }
       })
 
@@ -116,7 +128,6 @@ const skill = new Skill({
   ],
 
   execSkill: (context, skill) => {
-    console.log(1)
     context.gameObjects.forEach(gameObject => {
       if (GameObject.isEnemy(gameObject)) {
         skill.release(gameObject)
@@ -134,8 +145,6 @@ renderer.init()
 renderer.mount(app, {
   border: '1px solid #ddd'
 })
-
-console.log(tower)
 
 let t = 0
 

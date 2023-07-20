@@ -125,3 +125,33 @@ export function drawCrystalAnimation (
 
   run()
 }
+
+/**
+ * 绘制能量条
+ */
+export const drawEnergyBar = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  rate = 1,
+  fillStyle: string | CanvasGradient | CanvasPattern = '#0f0',
+  strokeStyle: string | CanvasGradient | CanvasPattern = '#000'
+) => {
+  ctx.save()
+
+  // 绘制底框
+  ctx.beginPath()
+  ctx.strokeStyle = strokeStyle
+  ctx.roundRect(x, y, width, height, height / 2)
+  ctx.stroke()
+
+  // 绘制底框
+  ctx.beginPath()
+  ctx.fillStyle = fillStyle
+  ctx.roundRect(x + 1, y + 1, (width - 2) * rate, height - 2, (height - 2) / 2)
+  ctx.fill()
+
+  ctx.restore()
+}
