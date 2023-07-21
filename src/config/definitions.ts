@@ -1,5 +1,6 @@
 // 命令类型
 export enum ActionTypes {
+  DEFAULT,
   CREATE,
   DESTROY,
   MOVE_TO

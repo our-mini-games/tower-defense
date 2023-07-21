@@ -30,6 +30,7 @@ export interface ActionOptions<T extends ActionTypes | unknown = unknown> {
 export interface IntervalActionOptions<T extends ActionTypes | unknown = unknown> extends ActionOptions<T> {
   interval: number
   immediate?: boolean
+  limitTimes?: number
 }
 
 export class Action<T extends ActionTypes | unknown = unknown> {
@@ -63,9 +64,11 @@ export class Action<T extends ActionTypes | unknown = unknown> {
         }
         break
       case ActionTypes.DESTROY:
-        if (this.source) {
-          this.source.destroy()
-        }
+        console.log('destroy')
+        // @todo
+        // if (this.source) {
+        //   this.source.destroy()
+        // }
         break
       case ActionTypes.CREATE:
         if (typeof this.target === 'function') {
@@ -73,7 +76,12 @@ export class Action<T extends ActionTypes | unknown = unknown> {
           this.target(this.source)
         }
         break
+      case ActionTypes.DEFAULT:
       default:
+        if (typeof this.target === 'function') {
+          // @ts-expect-error it-must-be-here
+          this.target(this.source)
+        }
         break
     }
   }
@@ -99,7 +107,7 @@ export class IntervalAction<T extends ActionTypes | unknown = unknown> extends A
   }
 
   execCheck () {
-    const currentTime = new Date().getTime()
+    const currentTime = performance.now()
 
     if (currentTime - this.lastTime > this.interval) {
       this.lastTime = currentTime

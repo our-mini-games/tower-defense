@@ -2,24 +2,29 @@
  * 游戏主控制系统
  */
 
-import { ActionTypes, GameObjectTypes, RendererTypes, ShapeTypes } from '../config'
-import { type ImageResource } from '../types'
-import { loadImage } from '../utils/tools'
+import { ActionTypes, EventTypes, RendererTypes, State } from '../config'
+import { type EventObject, type ImageResource } from '../types'
+import { copyMidpoint, loadImage } from '../utils/tools'
 import { Action, IntervalAction } from './action'
 import { BaseModule, type Renderer } from './base'
-import { GameObject } from './gameObject'
+import { AreaGameObject, EnemyGameObject, type GameObject, GlobalGameObject } from './gameObject'
 import type { BulletGameObject } from './gameObject/Bullet'
+import { Timer } from './Timer'
 import { Trigger } from './trigger'
 
 export interface Context {
   gameObjects: Map<string, GameObject>
   bullets: Map<string, BulletGameObject>
   triggers: Set<Trigger>
-  eventPool: any
+  eventPool: EventObject[]
   renderers: Map<RendererTypes, Renderer>
   timers: Map<string, any>
   variables: Map<string, any>
   terrains: Map<string, any>
+
+  addEvent: (event: EventObject) => void
+  deleteEvent: (event: EventObject) => void
+  clearEventPool: () => void
 }
 
 export class CentralControlSystem extends BaseModule {
@@ -35,6 +40,27 @@ export class CentralControlSystem extends BaseModule {
   elapseTime = 0
 
   requestId = 0
+
+  context: Context = {
+    gameObjects: new Map<string, GameObject>(),
+    bullets: new Map<string, BulletGameObject>(),
+    triggers: new Set<Trigger>(),
+    eventPool: [],
+    renderers: new Map<RendererTypes, Renderer>(),
+    timers: new Map<string, Timer>(),
+    variables: new Map<string, any>(),
+    terrains: new Map<string, any>(),
+
+    addEvent (event: EventObject) {
+      this.eventPool.push(event)
+    },
+    deleteEvent (event: EventObject) {
+      this.eventPool = this.eventPool.filter(e => e === event)
+    },
+    clearEventPool () {
+      this.eventPool.length = 0
+    }
+  }
 
   constructor (el: string | HTMLElement) {
     super()
@@ -60,24 +86,38 @@ export class CentralControlSystem extends BaseModule {
     await this.loadTriggers({
       enemyModel
     })
+
+    this.context.eventPool.push({ type: EventTypes.GAME_INIT })
   }
 
   update () {
-    this.triggers.forEach(trigger => {
-      this.gameObjects.forEach(gameObject => {
-        trigger.fire(gameObject)
-      })
+    const { context } = this
+
+    const eventPool = [...context.eventPool]
+
+    // 清空当前帧的事件池
+    context.clearEventPool()
+
+    // 更新计时器
+    context.timers.forEach(timer => { timer.update(context) })
+
+    context.triggers.forEach(trigger => {
+      const eventObject = eventPool.find(event => event.type === trigger.eventType)
+
+      if (eventObject) {
+        trigger.fire(eventObject, context)
+      }
     })
 
-    this.gameObjects.forEach(gameObject => {
-      gameObject.update()
+    context.gameObjects.forEach(gameObject => {
+      gameObject.update(context)
     })
 
-    const mainRenderer = this.renderers.get(RendererTypes.MAIN)!
+    const mainRenderer = context.renderers.get(RendererTypes.MAIN)
 
-    mainRenderer.clear()
-    this.gameObjects.forEach(gameObject => {
-      mainRenderer.draw(gameObject)
+    mainRenderer?.clear()
+    context.gameObjects.forEach(gameObject => {
+      mainRenderer?.draw(gameObject)
     })
   }
 
@@ -99,7 +139,7 @@ export class CentralControlSystem extends BaseModule {
       TerrainRenderer
     } = await import('../modules/renderer')
 
-    const { renderers } = this
+    const { renderers } = this.context
 
     const statisticsPanelRenderer = new StatisticsPanelRenderer({
       width: 48 * 14,
@@ -164,15 +204,15 @@ export class CentralControlSystem extends BaseModule {
   }
 
   async loadGameObjects () {
-    const { gameObjects } = this
+    const { context } = this
 
     const size = 48
     const x = 10
     const y = 7
 
     ;[
-      GameObject.create(GameObjectTypes.GLOBAL),
-      GameObject.create(GameObjectTypes.AREA, {
+      new GlobalGameObject(),
+      new AreaGameObject({
         id: 'inputArea',
         shapeOptions: {
           midpoint: { x: size * x - size / 2, y: size / 2 },
@@ -188,7 +228,7 @@ export class CentralControlSystem extends BaseModule {
         { x: size / 2, y: size * 5 - size / 2 },
         { x: size / 2, y: size * 7 - size / 2 }
       ].map((midpoint, index) => {
-        return GameObject.create(GameObjectTypes.AREA, {
+        return new AreaGameObject({
           id: `inflectionPoint${index + 1}`,
           shapeOptions: {
             midpoint,
@@ -197,7 +237,7 @@ export class CentralControlSystem extends BaseModule {
           }
         })
       }),
-      GameObject.create(GameObjectTypes.AREA, {
+      new AreaGameObject({
         id: 'destinationArea',
         shapeOptions: {
           midpoint: { x: size * x - size / 2, y: size * y - size / 2 },
@@ -207,84 +247,92 @@ export class CentralControlSystem extends BaseModule {
         }
       })
     ].forEach(gameObject => {
-      gameObject.init(gameObjects)
+      gameObject.init(context)
     })
   }
 
   // @todo - 临时传递个模型来测试
   async loadTriggers ({ enemyModel }: { enemyModel: ImageResource }) {
-    const { triggers, gameObjects } = this
-
+    const { context } = this
+    const { triggers, gameObjects } = context
     const inputArea = gameObjects.get('inputArea')!
-    const destinationArea = gameObjects.get('destinationArea')!
 
     triggers.add(new Trigger({
-      id: 'Send_Trigger',
-      conditions: [
-        source => source === inputArea
-      ],
+      eventType: EventTypes.GAME_INIT,
+      conditions: [],
       actions: [
-        new IntervalAction<ActionTypes.CREATE>({
-          interval: 1000,
+        () => new Action({
           type: ActionTypes.CREATE,
-          source: inputArea,
-          target: {
-            type: GameObjectTypes.ENEMY,
-            shapeOptions: {
-              type: ShapeTypes.CIRCLE,
-              midpoint: { ...inputArea.shape.midpoint },
-              width: 24,
-              height: 24,
-              radius: 12,
-              fillStyle: 'orange'
-            },
-            models: [enemyModel]
-          },
-          callback: (gameObject: GameObject) => {
-            gameObject.init(this.gameObjects)
+          target: () => {
+            // 创建一个计器
+            const runTriggerTimer = new Timer({
+              id: 'run',
+              interval: 20000,
+              repeatTimes: 2,
+              immediate: true
+            })
+            const stopTriggerTimer = new Timer({
+              id: 'stop',
+              interval: 5000,
+              repeatTimes: 1,
+              immediate: false
+            })
+
+            runTriggerTimer.init(context)
+            stopTriggerTimer.init(context)
+
+            // 创建一个发兵触发器
+            const trigger = new Trigger({
+              id: 'ABCDXXX',
+              eventType: EventTypes.CYCLE_TIMER_ARRIVAL,
+              state: State.ACTIVE,
+              conditions: [
+                e => runTriggerTimer === e.triggerObject
+              ],
+              actions: [
+                (_1, _2, trigger) => {
+                  trigger.setState(State.ACTIVE)
+                },
+                // 每秒创建一个单位
+                () => new IntervalAction({
+                  interval: 1000,
+                  immediate: true,
+                  type: ActionTypes.CREATE,
+                  source: inputArea,
+                  target: (source: AreaGameObject) => {
+                    const enemy = new EnemyGameObject({
+                      shapeOptions: {
+                        midpoint: copyMidpoint(source),
+                        width: 24,
+                        height: 25,
+                        fillStyle: 'blue'
+                      }
+                    })
+
+                    gameObjects.set(enemy.id, enemy)
+                  }
+                })
+              ]
+            })
+
+            triggers.add(trigger)
+
+            triggers.add(new Trigger({
+              eventType: EventTypes.CYCLE_TIMER_ARRIVAL,
+              conditions: [
+                e => e.triggerObject === stopTriggerTimer
+              ],
+              actions: [
+                () => {
+                  trigger.setState(State.INACTIVE)
+                  inputArea.unbindTrigger(trigger)
+                }
+              ]
+            }))
           }
         })
       ]
     }))
-
-    ;([
-      inputArea,
-      gameObjects.get('inflectionPoint1')!,
-      gameObjects.get('inflectionPoint2')!,
-      gameObjects.get('inflectionPoint3')!,
-      gameObjects.get('inflectionPoint4')!,
-      gameObjects.get('inflectionPoint5')!,
-      gameObjects.get('inflectionPoint6')!
-    ]).forEach((area, index, sourceAreas) => {
-      triggers.add(
-        new Trigger({
-          conditions: [
-            source => GameObject.isEnemy(source as GameObject),
-            source => (source as GameObject).shape.isEntered(area.shape)
-          ],
-          actions: [
-            new Action({
-              type: ActionTypes.MOVE_TO,
-              target: sourceAreas.length - 1 === index
-                ? destinationArea
-                : sourceAreas[index + 1]
-            })
-          ]
-        })
-      )
-    })
-
-    triggers.add(
-      new Trigger({
-        conditions: [
-          source => (source as GameObject).type === GameObjectTypes.ENEMY,
-          source => (source as GameObject).shape.isEntered(destinationArea.shape)
-        ],
-        actions: [
-          new Action({ type: ActionTypes.DESTROY })
-        ]
-      })
-    )
   }
 
   run () {

@@ -2,7 +2,7 @@
  * 游戏对象模块
  */
 
-import { type ActionTypes, GameObjectTypes, ShapeTypes } from '../../config'
+import { GameObjectTypes, ShapeTypes } from '../../config'
 import type { Coordinate, Energy, ImageResource } from '../../types'
 import { createRandomId } from '../../utils/tools'
 import type { Action } from '../action'
@@ -66,10 +66,11 @@ export class GameObject extends BaseModule {
   shape!: Shape
   data = []
   triggerIds = new Set<string>()
-  actions = new Map<ActionTypes, Action>()
+  actions = new Map<string /** triggerId */, Set<Action>>()
 
   props = createDefaultGameObjectProps()
 
+  // triggers = new Set<Trigger>()
   skills = new Map<string, Skill>()
 
   speed = 2
@@ -115,8 +116,10 @@ export class GameObject extends BaseModule {
 
     this.shape.update()
 
-    this.actions.forEach(action => {
-      action.exec(this)
+    this.actions.forEach(actions => {
+      actions.forEach(action => {
+        action.exec(this)
+      })
     })
   }
 
@@ -137,29 +140,31 @@ export class GameObject extends BaseModule {
     return false
   }
 
-  loadAction (actionName: ActionTypes, action: Action) {
-    this.actions.set(actionName, action)
+  loadAction (triggerId: string, action: Action) {
+    const actions = this.actions.get(triggerId) ?? new Set<Action>()
+
+    actions.add(action)
+    this.actions.set(triggerId, actions)
   }
 
-  unloadAction (actionName: ActionTypes) {
-    this.actions.delete(actionName)
+  unloadActions (triggerId: string) {
+    this.actions.delete(triggerId)
   }
 
-  bindTrigger (trigger: Trigger) {
+  bindTrigger (trigger: Trigger, action?: Action) {
     const { triggerIds } = this
 
-    // @todo
-    // if (!triggerIds.has(trigger.id)) {
-    //   trigger.actions.forEach(action => {
-    //     this.loadAction(action.type, action)
-    //   })
-    // }
+    if (!triggerIds.has(trigger.id) && action) {
+      this.loadAction(trigger.id, action)
+    }
 
-    triggerIds.add(trigger.id)
+    this.triggerIds.add(trigger.id)
   }
 
-  unbindTrigger (triggerId: string) {
-    this.triggerIds.delete(triggerId)
+  unbindTrigger (trigger: Trigger) {
+    this.triggerIds.delete(trigger.id)
+    this.unloadActions(trigger.id)
+    // this.triggerIds.delete(triggerId)
   }
 
   learnSkill (skill: Skill) {

@@ -26,3 +26,6 @@ export interface Energy {
   current: number
   max: number
 }
+
+// @todo
+export type EventObject = any
