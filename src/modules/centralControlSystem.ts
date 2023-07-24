@@ -5,9 +5,9 @@
 import { ActionTypes, EventTypes, RendererTypes, State } from '../config'
 import { type EventObject, type ImageResource } from '../types'
 import { copyMidpoint, loadImage } from '../utils/tools'
-import { Action, IntervalAction } from './action'
+import { Action } from './action'
 import { BaseModule, type Renderer } from './base'
-import { AreaGameObject, EnemyGameObject, type GameObject, GlobalGameObject } from './gameObject'
+import { AreaGameObject, EnemyGameObject, GameObject, GlobalGameObject } from './gameObject'
 import type { BulletGameObject } from './gameObject/Bullet'
 import { Timer } from './Timer'
 import { Trigger } from './trigger'
@@ -81,6 +81,7 @@ export class CentralControlSystem extends BaseModule {
   async init () {
     const enemyModel = await this.loadResources()
 
+    await this.loadTimers()
     await this.loadRenderers()
     await this.loadGameObjects()
     await this.loadTriggers({
@@ -98,8 +99,8 @@ export class CentralControlSystem extends BaseModule {
     // 清空当前帧的事件池
     context.clearEventPool()
 
-    // 更新计时器
-    context.timers.forEach(timer => { timer.update(context) })
+    // // 更新计时器
+    // context.timers.forEach(timer => { timer.update(context) })
 
     context.triggers.forEach(trigger => {
       const eventObject = eventPool.find(event => event.type === trigger.eventType)
@@ -119,6 +120,8 @@ export class CentralControlSystem extends BaseModule {
     context.gameObjects.forEach(gameObject => {
       mainRenderer?.draw(gameObject)
     })
+
+    // console.log(context.gameObjects.size)
   }
 
   async loadResources () {
@@ -128,6 +131,35 @@ export class CentralControlSystem extends BaseModule {
       height: 32,
       src: '/enemy.svg'
     })
+  }
+
+  async loadTimers () {
+    const { context } = this
+
+    // 发兵
+    // eslint-disable-next-line no-new
+    new Timer({
+      id: 'SendTimer',
+      duration: 1000,
+      immediate: true,
+      repeatTimes: Infinity
+    }, context)
+    // 暂停发兵
+    // eslint-disable-next-line no-new
+    new Timer({
+      id: 'StopSendTimer',
+      duration: 5000,
+      repeatTimes: Infinity
+    }, context)
+    // 下一波发兵
+    // eslint-disable-next-line no-new
+    new Timer({
+      id: 'ResendTimer',
+      duration: 10000,
+      repeatTimes: Infinity
+    }, context)
+
+    // this.context.timers.set('GlobalGameTimer', , context))
   }
 
   async loadRenderers () {
@@ -261,78 +293,120 @@ export class CentralControlSystem extends BaseModule {
       eventType: EventTypes.GAME_INIT,
       conditions: [],
       actions: [
-        () => new Action({
+        (_1, context) => new Action({
           type: ActionTypes.CREATE,
           target: () => {
-            // 创建一个计器
-            const runTriggerTimer = new Timer({
-              id: 'run',
-              interval: 20000,
-              repeatTimes: 2,
-              immediate: true
-            })
-            const stopTriggerTimer = new Timer({
-              id: 'stop',
-              interval: 5000,
-              repeatTimes: 1,
-              immediate: false
-            })
-
-            runTriggerTimer.init(context)
-            stopTriggerTimer.init(context)
-
-            // 创建一个发兵触发器
-            const trigger = new Trigger({
-              id: 'ABCDXXX',
-              eventType: EventTypes.CYCLE_TIMER_ARRIVAL,
-              state: State.ACTIVE,
-              conditions: [
-                e => runTriggerTimer === e.triggerObject
-              ],
-              actions: [
-                (_1, _2, trigger) => {
-                  trigger.setState(State.ACTIVE)
-                },
-                // 每秒创建一个单位
-                () => new IntervalAction({
-                  interval: 1000,
-                  immediate: true,
-                  type: ActionTypes.CREATE,
-                  source: inputArea,
-                  target: (source: AreaGameObject) => {
-                    const enemy = new EnemyGameObject({
-                      shapeOptions: {
-                        midpoint: copyMidpoint(source),
-                        width: 24,
-                        height: 25,
-                        fillStyle: 'blue'
-                      }
-                    })
-
-                    gameObjects.set(enemy.id, enemy)
-                  }
-                })
-              ]
-            })
-
-            triggers.add(trigger)
-
-            triggers.add(new Trigger({
-              eventType: EventTypes.CYCLE_TIMER_ARRIVAL,
-              conditions: [
-                e => e.triggerObject === stopTriggerTimer
-              ],
-              actions: [
-                () => {
-                  trigger.setState(State.INACTIVE)
-                  inputArea.unbindTrigger(trigger)
-                }
-              ]
-            }))
+            console.log('游戏初始化完成')
           }
         })
       ]
     }))
+
+    // 发兵触发器
+    triggers.add(new Trigger({
+      id: 'send',
+      eventType: EventTypes.CYCLE_TIMER_ARRIVAL,
+      conditions: [
+        (e, context) => e.triggerObject === context.timers.get('SendTimer')
+      ],
+      actions: [
+        () => {
+          const enemy = new EnemyGameObject({
+            shapeOptions: {
+              midpoint: copyMidpoint(inputArea),
+              width: 24,
+              height: 25,
+              fillStyle: 'blue'
+            },
+            props: {
+              speed: 4
+            }
+          })
+
+          gameObjects.set(enemy.id, enemy)
+          context.addEvent({
+            type: EventTypes.GAME_OBJECT_ENTER_AREA,
+            triggerObject: enemy,
+            targetObject: inputArea
+          })
+        }
+      ]
+    }))
+
+    // 暂停发兵触发器
+    triggers.add(new Trigger({
+      id: 'stop',
+      eventType: EventTypes.CYCLE_TIMER_ARRIVAL,
+      conditions: [
+        (e, context) => e.triggerObject === context.timers.get('StopSendTimer')
+      ],
+      actions: [
+        (e, context) => {
+          // 暂停发兵
+          context.timers.get('SendTimer')!.state = State.INACTIVE
+          // 停止暂停发兵计时器
+          e.triggerObject.state = State.INACTIVE
+          // 启动下一波计时器
+          context.timers.get('ResendTimer')!.state = State.ACTIVE
+        }
+      ]
+    }))
+
+    // 重新开始发布触发器
+    triggers.add(new Trigger({
+      id: 'resend',
+      eventType: EventTypes.CYCLE_TIMER_ARRIVAL,
+      conditions: [
+        (e, context) => e.triggerObject === context.timers.get('ResendTimer')
+      ],
+      actions: [
+        (e, context) => {
+          // 停止下一波计时器
+          e.triggerObject.state = State.INACTIVE
+          // 启动发兵
+          context.timers.get('SendTimer')!.state = State.ACTIVE
+          // 启动暂停发兵计时器
+          context.timers.get('StopSendTimer')!.state = State.ACTIVE
+        }
+      ]
+    }))
+
+    ;[
+      context.gameObjects.get('inputArea')!,
+      context.gameObjects.get('inflectionPoint1')!,
+      context.gameObjects.get('inflectionPoint2')!,
+      context.gameObjects.get('inflectionPoint3')!,
+      context.gameObjects.get('inflectionPoint4')!,
+      context.gameObjects.get('inflectionPoint5')!,
+      context.gameObjects.get('inflectionPoint6')!,
+      context.gameObjects.get('destinationArea')!
+    ].forEach((area, index, sourceArray) => {
+      triggers.add(new Trigger({
+        eventType: EventTypes.GAME_OBJECT_ENTER_AREA,
+        conditions: [
+          e => GameObject.isEnemy(e.triggerObject),
+          e => area === e.targetObject
+        ],
+        actions: [
+          (...args) => {
+            console.log(args)
+          },
+          (e, context) => {
+            if (index === sourceArray.length - 1) {
+              e.triggerObject.destroy(context)
+
+              return false
+            } else {
+              return new Action({
+                source: e.triggerObject,
+                type: ActionTypes.MOVE_TO,
+                target: sourceArray[index + 1]
+              })
+            }
+          }
+        ]
+      }))
+    })
   }
 
   run () {

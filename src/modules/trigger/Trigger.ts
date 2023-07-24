@@ -40,6 +40,7 @@ export class Trigger {
   }
 
   setState (state: State) {
+    console.log('SET STATE', state)
     this.#state = state
   }
 
@@ -51,6 +52,8 @@ export class Trigger {
   // }
 
   checkCondition (eventObject: EventObject, context: Context) {
+    console.log('check', eventObject.triggerObject?.id)
+
     return this.conditions?.every(condition => condition(eventObject, context, this))
   }
 

@@ -1,3 +1,6 @@
+import type { EventTypes } from '../config'
+// import type { GameObject } from '../modules/gameObject'
+
 export interface Coordinate {
   x: number
   y: number
@@ -27,5 +30,8 @@ export interface Energy {
   max: number
 }
 
-// @todo
-export type EventObject = any
+export interface EventObject {
+  type: EventTypes
+  triggerObject?: any
+  targetObject?: any
+}
