@@ -2,7 +2,7 @@
  * 游戏对象模块
  */
 
-import { GameObjectTypes, ShapeTypes } from '../../config'
+import { ActionTypes, EventTypes, GameObjectTypes, ShapeTypes } from '../../config'
 import type { Coordinate, Energy, ImageResource } from '../../types'
 import { createRandomId } from '../../utils/tools'
 import type { Action } from '../action'
@@ -66,7 +66,8 @@ export class GameObject extends BaseModule {
   shape!: Shape
   data = []
   triggerIds = new Set<string>()
-  actions = new Map<string /** triggerId */, Set<Action>>()
+  // actions = new Map<string /** triggerId */, Set<Action>>()
+  actions = new Map<ActionTypes, Action>()
 
   props = createDefaultGameObjectProps()
 
@@ -109,6 +110,9 @@ export class GameObject extends BaseModule {
       return
     }
 
+    // 检测当前对象是否进入了目标区域
+    this.isMoveToActionDone(context)
+
     // 执行被动执行
     this.skills.forEach(skill => {
       skill.execSkill(context, skill)
@@ -116,10 +120,8 @@ export class GameObject extends BaseModule {
 
     this.shape.update()
 
-    this.actions.forEach(actions => {
-      actions.forEach(action => {
-        action.exec(this)
-      })
+    this.actions.forEach(action => {
+      action.exec(this)
     })
   }
 
@@ -140,22 +142,22 @@ export class GameObject extends BaseModule {
     return false
   }
 
-  loadAction (triggerId: string, action: Action) {
-    const actions = this.actions.get(triggerId) ?? new Set<Action>()
+  loadAction (action: Action) {
+    // const actions = this.actions.get(triggerId) ?? new Set<Action>()
 
-    actions.add(action)
-    this.actions.set(triggerId, actions)
+    // actions.add(action)
+    this.actions.set(action.type, action)
   }
 
-  unloadActions (triggerId: string) {
-    this.actions.delete(triggerId)
+  unloadActions (action: Action) {
+    this.actions.delete(action.type)
   }
 
   bindTrigger (trigger: Trigger, action?: Action) {
     const { triggerIds } = this
 
     if (!triggerIds.has(trigger.id) && action) {
-      this.loadAction(trigger.id, action)
+      this.loadAction(action)
     }
 
     this.triggerIds.add(trigger.id)
@@ -163,7 +165,7 @@ export class GameObject extends BaseModule {
 
   unbindTrigger (trigger: Trigger) {
     this.triggerIds.delete(trigger.id)
-    this.unloadActions(trigger.id)
+    // this.unloadActions(trigger.id)
     // this.triggerIds.delete(triggerId)
   }
 
@@ -221,6 +223,27 @@ export class GameObject extends BaseModule {
       case 'healthPoint':
         healthPoint.current = Math.min(healthPoint.max, Math.max(0, healthPoint.current + base * value))
         break
+    }
+  }
+
+  /**
+   * 检测移动动作是否抵达目标位置
+   */
+  isMoveToActionDone (context: Context) {
+    let moveToAction: Action | null = null
+
+    this.actions.forEach(action => {
+      if (action.type === ActionTypes.MOVE_TO) {
+        moveToAction = action
+      }
+    })
+
+    if (moveToAction && this.shape.isEntered((moveToAction as Action).target!.shape)) {
+      context.addEvent({
+        type: EventTypes.GAME_OBJECT_ENTER_AREA,
+        triggerObject: this,
+        targetObject: (moveToAction as Action).target!
+      })
     }
   }
 
