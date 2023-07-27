@@ -76,10 +76,12 @@ export enum EventTypes {
   /** 单位离开区域 */
   GAME_OBJECT_LEAVE_AREA,
 
-  /** 计时器（单次） */
-  SINGLE_TIMER_ARRIVAL,
-  /** 计时器（循环） */
-  CYCLE_TIMER_ARRIVAL,
+  // /** 计时器（单次） */
+  // SINGLE_TIMER_ARRIVAL,
+  // /** 计时器（循环） */
+  // CYCLE_TIMER_ARRIVAL,
+  /** 计时器到期 */
+  TimerHasExpired,
 
   /** 单位被选择 */
   GAME_OBJECT_SELECTED,
@@ -96,4 +98,9 @@ export enum SkillTypes {
 export enum SkillModes {
   ACTIVE,
   PASSIVE
+}
+
+export enum Order {
+  ASCEND,
+  DESCEND
 }

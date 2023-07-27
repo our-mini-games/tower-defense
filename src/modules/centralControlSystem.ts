@@ -2,9 +2,9 @@
  * 游戏主控制系统
  */
 
-import { ActionTypes, EventTypes, RendererTypes, State } from '../config'
+import { ActionTypes, EventTypes, RendererTypes } from '../config'
 import { type EventObject, type ImageResource } from '../types'
-import { copyMidpoint, loadImage } from '../utils/tools'
+import { copyMidpoint, loadImage, sleep } from '../utils/tools'
 import { Action } from './action'
 import { BaseModule, type Renderer } from './base'
 import { AreaGameObject, EnemyGameObject, GameObject, GlobalGameObject } from './gameObject'
@@ -21,6 +21,9 @@ export interface Context {
   timers: Map<string, any>
   variables: Map<string, any>
   terrains: Map<string, any>
+
+  fps: number
+  elapsedTime: number
 
   addEvent: (event: EventObject) => void
   deleteEvent: (event: EventObject) => void
@@ -50,6 +53,9 @@ export class CentralControlSystem extends BaseModule {
     timers: new Map<string, Timer>(),
     variables: new Map<string, any>(),
     terrains: new Map<string, any>(),
+
+    fps: 1000 / 60,
+    elapsedTime: 0,
 
     addEvent (event: EventObject) {
       this.eventPool.push(event)
@@ -88,7 +94,7 @@ export class CentralControlSystem extends BaseModule {
       enemyModel
     })
 
-    this.context.eventPool.push({ type: EventTypes.GAME_INIT })
+    this.context.addEvent({ type: EventTypes.GAME_INIT })
   }
 
   update () {
@@ -99,8 +105,8 @@ export class CentralControlSystem extends BaseModule {
     // 清空当前帧的事件池
     context.clearEventPool()
 
-    // // 更新计时器
-    // context.timers.forEach(timer => { timer.update(context) })
+    // 更新计时器
+    context.timers.forEach(timer => { timer.update(context) })
 
     context.triggers.forEach(trigger => {
       const eventObject = eventPool.find(event => event.type === trigger.eventType)
@@ -136,30 +142,14 @@ export class CentralControlSystem extends BaseModule {
   async loadTimers () {
     const { context } = this
 
-    // 发兵
-    // eslint-disable-next-line no-new
-    new Timer({
+    const sendTimer = new Timer({
       id: 'SendTimer',
-      duration: 1000,
+      duration: 30000,
       immediate: true,
       repeatTimes: Infinity
-    }, context)
-    // 暂停发兵
-    // eslint-disable-next-line no-new
-    new Timer({
-      id: 'StopSendTimer',
-      duration: 5000,
-      repeatTimes: Infinity
-    }, context)
-    // 下一波发兵
-    // eslint-disable-next-line no-new
-    new Timer({
-      id: 'ResendTimer',
-      duration: 10000,
-      repeatTimes: Infinity
-    }, context)
+    })
 
-    // this.context.timers.set('GlobalGameTimer', , context))
+    sendTimer.init(context)
   }
 
   async loadRenderers () {
@@ -305,68 +295,36 @@ export class CentralControlSystem extends BaseModule {
     // 发兵触发器
     triggers.add(new Trigger({
       id: 'send',
-      eventType: EventTypes.CYCLE_TIMER_ARRIVAL,
+      eventType: EventTypes.TimerHasExpired,
       conditions: [
         (e, context) => e.triggerObject === context.timers.get('SendTimer')
       ],
       actions: [
-        () => {
-          const enemy = new EnemyGameObject({
-            shapeOptions: {
-              midpoint: copyMidpoint(inputArea),
-              width: 24,
-              height: 25,
-              fillStyle: 'blue'
-            },
-            props: {
-              speed: 4
-            }
-          })
+        async (_, context) => {
+          // @todo 发兵数量 / 兵种应该由变量控制
+          for (let i = 0; i < 20; i++) {
+            const enemy = new EnemyGameObject({
+              shapeOptions: {
+                midpoint: copyMidpoint(inputArea),
+                width: 24,
+                height: 25,
+                fillStyle: 'blue'
+              },
+              props: {
+                speed: 4
+              }
+            })
 
-          gameObjects.set(enemy.id, enemy)
-          context.addEvent({
-            type: EventTypes.GAME_OBJECT_ENTER_AREA,
-            triggerObject: enemy,
-            targetObject: inputArea
-          })
-        }
-      ]
-    }))
+            enemy.init(context)
 
-    // 暂停发兵触发器
-    triggers.add(new Trigger({
-      id: 'stop',
-      eventType: EventTypes.CYCLE_TIMER_ARRIVAL,
-      conditions: [
-        (e, context) => e.triggerObject === context.timers.get('StopSendTimer')
-      ],
-      actions: [
-        (e, context) => {
-          // 暂停发兵
-          context.timers.get('SendTimer')!.state = State.INACTIVE
-          // 停止暂停发兵计时器
-          e.triggerObject.state = State.INACTIVE
-          // 启动下一波计时器
-          context.timers.get('ResendTimer')!.state = State.ACTIVE
-        }
-      ]
-    }))
+            context.addEvent({
+              type: EventTypes.GAME_OBJECT_ENTER_AREA,
+              triggerObject: enemy,
+              targetObject: inputArea
+            })
 
-    // 重新开始发布触发器
-    triggers.add(new Trigger({
-      id: 'resend',
-      eventType: EventTypes.CYCLE_TIMER_ARRIVAL,
-      conditions: [
-        (e, context) => e.triggerObject === context.timers.get('ResendTimer')
-      ],
-      actions: [
-        (e, context) => {
-          // 停止下一波计时器
-          e.triggerObject.state = State.INACTIVE
-          // 启动发兵
-          context.timers.get('SendTimer')!.state = State.ACTIVE
-          // 启动暂停发兵计时器
-          context.timers.get('StopSendTimer')!.state = State.ACTIVE
+            await sleep(1000)
+          }
         }
       ]
     }))
@@ -413,6 +371,8 @@ export class CentralControlSystem extends BaseModule {
     this.requestId = requestAnimationFrame(this.run.bind(this))
 
     this.update()
+
+    this.context.elapsedTime += this.context.fps
   }
 
   pause () {

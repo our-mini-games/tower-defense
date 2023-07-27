@@ -186,7 +186,7 @@ const app = document.querySelector<HTMLElement>('#app')!
 // ....
 const ccs = new CentralControlSystem(app)
 
-ccs.init()
+await ccs.init()
 ccs.run()
 
 const oBtn = document.createElement('button')
