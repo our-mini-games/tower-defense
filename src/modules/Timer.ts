@@ -1,13 +1,7 @@
-import { EventTypes, State } from '../config'
+import { EventTypes, Order, State } from '../config'
 import { createRandomId } from '../utils/tools'
+import { BaseModule } from './base'
 import type { Context } from './centralControlSystem'
-
-export interface TimerOptions {
-  id?: string
-  repeatTimes?: number
-  immediate?: boolean
-  duration: number
-}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createRunner = (callback: (...args: any[]) => any, fps = 1000 / 60) => {
@@ -36,142 +30,147 @@ export const createRunner = (callback: (...args: any[]) => any, fps = 1000 / 60)
   }
 }
 
-// // 计时器
-// export class Timer extends BaseModule {
-//   id = createRandomId('Timer')
-//   interval = 0
-//   repeatTimes = Infinity
-//   immediate = false
-
-//   data = null
-
-//   private createTime = performance.now()
-
-//   constructor (options: TimerOptions) {
-//     super()
-
-//     Object.assign(this, options)
-//   }
-
-//   init (context: Context) {
-//     context.timers.set(this.id, this)
-
-//     if (this.immediate) {
-//       this.createTime = -Infinity
-//       this.update(context)
-//     }
-//   }
-
-//   update (context: Context) {
-//     if (this.isEnded()) {
-//       context.timers.delete(this.id)
-
-//       return
-//     }
-
-//     if (this.isTimeout()) {
-//       context.addEvent({
-//         type: EventTypes.CYCLE_TIMER_ARRIVAL,
-//         triggerObject: this
-//       })
-//     }
-//   }
-
-//   isTimeout () {
-//     const now = performance.now()
-
-//     if (now - this.createTime >= this.interval) {
-//       this.createTime = now
-
-//       return true
-//     }
-
-//     return false
-//   }
-
-//   isEnded () {
-//     return this.repeatTimes <= 0
-//   }
-// }
-
-export class Timer {
-  id!: string
-  #state = State.INACTIVE
-
-  initialDuration = Infinity
-  initialRepeatTimes = 1
-
+export interface TimerOptions {
+  id?: string
+  title?: string
+  visible?: boolean
+  duration: number
+  repeatTimes?: number
+  state?: State
+  order?: Order
+  immediate?: boolean
+}
+export class Timer extends BaseModule {
+  data = null
+  id = ''
+  title = ''
+  visible = false
   duration = 0
+  state = State.ACTIVE
+
+  order = Order.DESCEND
+
+  context: Context | null = null
+
+  // 启动 Timer 时，游戏已经运行的时间
+  startTime = 0
+  // 当前 Timer 计时
+  currentTime = 0
+  // 重复次数
   repeatTimes = 0
+  // 当前重复次数
+  currentRepeatTimes = 0
 
-  addEvent!: Context['addEvent']
-
-  runner = createRunner(this.#run.bind(this))
+  // 是否立即触发
+  immediate = false
 
   constructor ({
-    id,
     duration,
-    repeatTimes,
-    immediate = true
-  }: TimerOptions, context: Context) {
-    this.id = id ?? createRandomId('Timer')
+    id = createRandomId('Timer'),
+    title = '计时器',
+    visible = false,
+    repeatTimes = 1,
+    state = State.ACTIVE,
+    order = Order.DESCEND,
+    immediate = false
+  }: TimerOptions) {
+    super()
+    console.log(1)
+    Object.assign(this, {
+      id,
+      title,
+      visible,
+      duration,
+      repeatTimes,
+      state,
+      order,
+      immediate
+    })
+  }
 
-    this.initialDuration = duration
-    this.initialRepeatTimes = repeatTimes ?? 1
+  get isActive () {
+    return this.state === State.ACTIVE
+  }
 
-    if (immediate) {
-      this.state = State.ACTIVE
+  // 已经运行的时长
+  get elapsedTime () {
+    return this.currentTime - this.startTime
+  }
 
-      context.addEvent({
-        type: EventTypes.CYCLE_TIMER_ARRIVAL,
-        triggerObject: this
-      })
-    }
+  // 计时器是否已经到时
+  get isTimerHasExpired () {
+    return this.duration - this.elapsedTime <= 0
+  }
 
-    this.addEvent = context.addEvent.bind(context)
+  // 计时器是否已经重复完毕
+  get isDone () {
+    return this.repeatTimes - this.currentRepeatTimes <= 0
+  }
 
+  // 展示的时间
+  get displayTime () {
+    return this.order === Order.ASCEND
+      ? this.elapsedTime
+      : this.duration - this.elapsedTime
+  }
+
+  init (context: Context) {
+    this.context = context
     context.timers.set(this.id, this)
-  }
+    this.update(context)
 
-  get state () {
-    return this.#state
-  }
-
-  set state (state: State) {
-    this.#state = state
-
-    if (state === State.ACTIVE) {
-      this.runner.run()
-    } else {
-      this.runner.stop()
+    // 立即触发一次
+    if (this.immediate) {
+      console.log('immediate')
+      this.onTimerHasExpired(context)
     }
   }
 
-  check () {
-    if (this.duration >= this.initialDuration) {
-      this.duration -= this.initialDuration
+  update (context: Context) {
+    if (this.isActive) {
+      this.currentTime = context.elapsedTime
 
-      if (++this.repeatTimes >= this.initialRepeatTimes) {
-        // @todo - 已经结束了计时了
+      if (this.isTimerHasExpired) {
+        this.onTimerHasExpired(context)
       }
-      this.addEvent({
-        type: EventTypes.CYCLE_TIMER_ARRIVAL,
-        triggerObject: this
-      })
-      // console.log(1111)
     }
   }
 
-  #run () {
-    this.duration += 1000 / 60
-    this.check()
-  }
-
-  reset (allReset = false) {
-    if (allReset) {
-      this.repeatTimes = 0
+  setState (state: State) {
+    if (!this.context) {
+      throw new Error('`init()` must invoked before `setState()`.')
     }
 
-    this.duration = 0
+    this.state = state
+    if (state === State.ACTIVE) {
+      this.startTime = this.context.elapsedTime
+    }
+  }
+
+  display () {
+    this.visible = true
+  }
+
+  hide () {
+    this.visible = false
+  }
+
+  onTimerHasExpired (context: Context) {
+    // 触发计时器到期事件
+    context.addEvent({
+      type: EventTypes.TimerHasExpired,
+      triggerObject: this
+    })
+
+    // 重复次数 + 1
+    this.currentRepeatTimes++
+
+    if (this.isDone) {
+      // 计时器已经完成所有次数的计时，将其失活
+      this.setState(State.INACTIVE)
+    } else {
+      // 重置计时器初始时间
+      this.startTime = this.currentTime
+    }
   }
 }
