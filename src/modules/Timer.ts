@@ -75,7 +75,6 @@ export class Timer extends BaseModule {
     immediate = false
   }: TimerOptions) {
     super()
-    console.log(1)
     Object.assign(this, {
       id,
       title,
@@ -121,7 +120,6 @@ export class Timer extends BaseModule {
 
     // 立即触发一次
     if (this.immediate) {
-      console.log('immediate')
       this.onTimerHasExpired(context)
     }
   }
