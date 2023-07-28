@@ -133,11 +133,11 @@ export class BulletGameObject extends GameObject {
   }
 
   get isReachTarget () {
-    const { target, shape: { midpoint } } = this
+    const { target } = this
 
     if (!target) return
 
-    return calcHypotenuse(target.shape.midpoint, midpoint) <= 2
+    return isCollision(this, target)
   }
 
   init (context: Context) {
@@ -149,6 +149,7 @@ export class BulletGameObject extends GameObject {
     this.shape.update()
 
     if (this.isOverTime) {
+      console.log('bullet over timer')
       this.onOverTime?.(this)
       this.destroy(context)
 
@@ -156,6 +157,7 @@ export class BulletGameObject extends GameObject {
     }
 
     if (this.isOverRange) {
+      console.log('bullet over range')
       this.onOverRange?.(this)
       this.destroy(context)
 
@@ -163,6 +165,7 @@ export class BulletGameObject extends GameObject {
     }
 
     if (this.isReachTarget) {
+      console.log('bullet reach target')
       this.onReachTarget?.(this.target, this)
       this.destroy(context)
 
@@ -189,11 +192,10 @@ export class BulletGameObject extends GameObject {
   }
 
   // 伤害算法
-  damageCalculation (): number {
+  damageCalculation (target: GameObject): number {
     // (对象的攻击力 - 目标的防御力) * 基础伤害值 * 技能攻击倍率
     const {
       owner: skill,
-      target,
       basePhysicalDamage,
       baseMagicDamage
     } = this

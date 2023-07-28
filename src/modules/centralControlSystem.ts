@@ -2,15 +2,16 @@
  * 游戏主控制系统
  */
 
-import { ActionTypes, EventTypes, RendererTypes } from '../config'
+import { ActionTypes, EventTypes, RendererTypes, ShapeTypes, SkillModes } from '../config'
 import { type EventObject, type ImageResource } from '../types'
 import { copyMidpoint, loadImage, sleep } from '../utils/tools'
 import { Action } from './action'
 import { BaseModule, type Renderer } from './base'
-import { AreaGameObject, EnemyGameObject, GameObject, GlobalGameObject } from './gameObject'
-import type { BulletGameObject } from './gameObject/Bullet'
+import { AreaGameObject, EnemyGameObject, GameObject, GlobalGameObject, TowerGameObject } from './gameObject'
+import { BulletGameObject } from './gameObject/Bullet'
+import { Shape } from './shape'
 import { Timer } from './Timer'
-import { Trigger } from './trigger'
+import { Skill, Trigger } from './trigger'
 
 export interface Context {
   gameObjects: Map<string, GameObject>
@@ -120,11 +121,19 @@ export class CentralControlSystem extends BaseModule {
       gameObject.update(context)
     })
 
+    context.bullets.forEach(bullet => {
+      bullet.update(context)
+    })
+
     const mainRenderer = context.renderers.get(RendererTypes.MAIN)
 
     mainRenderer?.clear()
     context.gameObjects.forEach(gameObject => {
       mainRenderer?.draw(gameObject)
+    })
+
+    context.bullets.forEach(bullet => {
+      mainRenderer?.draw(bullet)
     })
 
     // console.log(context.gameObjects.size)
@@ -267,6 +276,22 @@ export class CentralControlSystem extends BaseModule {
           height: size,
           fillStyle: 'red'
         }
+      }),
+
+      // 创建一个塔来测试
+      new TowerGameObject({
+        id: 'Tower1',
+        shapeOptions: {
+          midpoint: { x: size + size / 2, y: size + size / 2 },
+          width: size / 2,
+          height: size / 2,
+          fillStyle: 'orange'
+        },
+        props: {
+          healthPoint: { current: 1000, max: 1000 },
+          magicPoint: { current: 1000, max: 1000 },
+          physicalAttack: 100
+        }
       })
     ].forEach(gameObject => {
       gameObject.init(context)
@@ -287,6 +312,79 @@ export class CentralControlSystem extends BaseModule {
           type: ActionTypes.CREATE,
           target: () => {
             console.log('游戏初始化完成')
+            // 给塔装载技能
+            const tower1 = context.gameObjects.get('Tower1')!
+
+            const skill = new Skill({
+              name: '普通攻击',
+              mode: SkillModes.PASSIVE,
+              range: 100,
+              releaseDuration: 200,
+              cooldown: 1000,
+
+              effects: [
+                (target, skill) => {
+                  const bullet = new BulletGameObject({
+                    target,
+                    owner: skill,
+                    shape: new Shape({
+                      type: ShapeTypes.CIRCLE,
+                      width: 10,
+                      height: 10,
+                      radius: 5,
+                      midpoint: copyMidpoint(skill.owner!),
+                      fillStyle: '#000'
+                    }),
+                    speed: 4,
+                    survivalTime: 1000,
+                    maxRange: 300,
+                    basePhysicalDamage: 5,
+
+                    onReachTarget: (target) => {
+                      console.log('REACH_TARGET', target, bullet.damageCalculation(target))
+                      // target.destroy(context)
+                      target.doConsume('healthPoint', bullet.damageCalculation(target), 'decrease')
+                    },
+
+                    onCollision: (collisionTarget, bullet) => {
+                      console.log('collision:', collisionTarget, bullet)
+                      // collisionTarget.destroy(context)
+                    },
+
+                    onOverTime: (bullet) => {
+                      console.log('overTime')
+                      // bullet.destroy(context)
+                    },
+
+                    onOverRange: (bullet) => {
+                      console.log('overRange')
+                      // bullet.destroy()
+                    },
+
+                    onAttackUpperLimit: (bullet) => {
+                      console.log('upper limit')
+                      bullet.destroy(context)
+                    },
+
+                    onTargetDisappear: (bullet) => {
+                      console.log('target dead!')
+                    }
+                  })
+
+                  bullet.init(context)
+                }
+              ],
+
+              execSkill: (context, skill) => {
+                context.gameObjects.forEach(gameObject => {
+                  if (GameObject.isEnemy(gameObject)) {
+                    skill.release(gameObject)
+                  }
+                })
+              }
+            })
+
+            skill.init(tower1)
           }
         })
       ]
@@ -311,7 +409,9 @@ export class CentralControlSystem extends BaseModule {
                 fillStyle: 'blue'
               },
               props: {
-                speed: 4
+                speed: 2,
+                healthPoint: { current: 1000, max: 1000 },
+                magicPoint: { current: 1000, max: 1000 }
               }
             })
 
