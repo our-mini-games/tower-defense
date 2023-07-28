@@ -186,8 +186,10 @@ const app = document.querySelector<HTMLElement>('#app')!
 // ....
 const ccs = new CentralControlSystem(app)
 
-await ccs.init()
-ccs.run()
+ccs.init()
+  .then(() => {
+    ccs.run()
+  })
 
 const oBtn = document.createElement('button')
 
