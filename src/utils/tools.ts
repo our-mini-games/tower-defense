@@ -113,3 +113,17 @@ export const getRectVertexes = ({
     { x: leftX, y: bottomY }
   ]
 }
+
+/**
+ * 找出距离目标对象最近的几个对象
+ * @param target - 目标对象
+ * @param collections - 集合
+ * @param max - 需要从集合中找出几个对象
+ */
+export const findNearestGameObjects = (target: GameObject, collections: GameObject[], max = 1) => {
+  const { shape: { midpoint } } = target
+
+  return collections.sort((a, b) => {
+    return calcHypotenuse(a.shape.midpoint, midpoint) - calcHypotenuse(b.shape.midpoint, midpoint)
+  }).slice(0, max)
+}

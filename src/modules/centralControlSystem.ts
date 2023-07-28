@@ -4,7 +4,7 @@
 
 import { ActionTypes, EventTypes, RendererTypes, ShapeTypes, SkillModes } from '../config'
 import { type EventObject, type ImageResource } from '../types'
-import { copyMidpoint, loadImage, sleep } from '../utils/tools'
+import { copyMidpoint, findNearestGameObjects, loadImage, sleep } from '../utils/tools'
 import { Action } from './action'
 import { BaseModule, type Renderer } from './base'
 import { AreaGameObject, EnemyGameObject, GameObject, GlobalGameObject, TowerGameObject } from './gameObject'
@@ -292,6 +292,20 @@ export class CentralControlSystem extends BaseModule {
           magicPoint: { current: 1000, max: 1000 },
           physicalAttack: 100
         }
+      }),
+      new TowerGameObject({
+        id: 'Tower2',
+        shapeOptions: {
+          midpoint: { x: size * 2 + size / 2, y: size * 3 + size / 2 },
+          width: size / 2,
+          height: size / 2,
+          fillStyle: 'orange'
+        },
+        props: {
+          healthPoint: { current: 1000, max: 1000 },
+          magicPoint: { current: 1000, max: 1000 },
+          physicalAttack: 100
+        }
       })
     ].forEach(gameObject => {
       gameObject.init(context)
@@ -314,8 +328,9 @@ export class CentralControlSystem extends BaseModule {
             console.log('游戏初始化完成')
             // 给塔装载技能
             const tower1 = context.gameObjects.get('Tower1')!
+            const tower2 = context.gameObjects.get('Tower2')!
 
-            const skill = new Skill({
+            const skill1 = new Skill({
               name: '普通攻击',
               mode: SkillModes.PASSIVE,
               range: 100,
@@ -384,7 +399,84 @@ export class CentralControlSystem extends BaseModule {
               }
             })
 
-            skill.init(tower1)
+            const skill2 = new Skill({
+              name: '多重箭',
+              mode: SkillModes.PASSIVE,
+              range: 100,
+              releaseDuration: 200,
+              cooldown: 1000,
+
+              effects: [
+                (target, skill) => {
+                  // 对当前触发目标，以及离它最近的 2 个目标，发一起一攻击（一共3个目标）
+                  const collections = [...context.gameObjects.values()]
+                    .filter(gameObject => gameObject !== target && GameObject.isEnemy(gameObject))
+                  const gameObjects = findNearestGameObjects(target, collections, 2)
+
+                  ;[target, ...gameObjects].forEach(gameObject => {
+                    const bullet = new BulletGameObject({
+                      target: gameObject,
+                      owner: skill,
+                      shape: new Shape({
+                        type: ShapeTypes.CIRCLE,
+                        width: 10,
+                        height: 10,
+                        radius: 5,
+                        midpoint: copyMidpoint(skill.owner!),
+                        fillStyle: '#000'
+                      }),
+                      speed: 4,
+                      survivalTime: 1000,
+                      maxRange: 300,
+                      basePhysicalDamage: 5,
+
+                      onReachTarget: (target) => {
+                        console.log('REACH_TARGET', target, bullet.damageCalculation(target))
+                        // target.destroy(context)
+                        target.doConsume('healthPoint', bullet.damageCalculation(target), 'decrease')
+                      },
+
+                      onCollision: (collisionTarget, bullet) => {
+                        console.log('collision:', collisionTarget, bullet)
+                        // collisionTarget.destroy(context)
+                      },
+
+                      onOverTime: (bullet) => {
+                        console.log('overTime')
+                        // bullet.destroy(context)
+                      },
+
+                      onOverRange: (bullet) => {
+                        console.log('overRange')
+                        // bullet.destroy()
+                      },
+
+                      onAttackUpperLimit: (bullet) => {
+                        console.log('upper limit')
+                        bullet.destroy(context)
+                      },
+
+                      onTargetDisappear: (bullet) => {
+                        console.log('target dead!')
+                      }
+                    })
+
+                    bullet.init(context)
+                  })
+                }
+              ],
+
+              execSkill: (context, skill) => {
+                context.gameObjects.forEach(gameObject => {
+                  if (GameObject.isEnemy(gameObject)) {
+                    skill.release(gameObject)
+                  }
+                })
+              }
+            })
+
+            skill1.init(tower1)
+            skill2.init(tower2)
           }
         })
       ]
