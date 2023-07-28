@@ -57,6 +57,9 @@ export const loadImages = async (resources: Resource[]) => {
 }
 
 export const loadImage = ({ name, width, height, src }: Resource) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pathname = (import.meta as any).env.VITE_APP_PATHNAME
+
   return new Promise<ImageResource>((resolve, reject) => {
     const oImg = new Image()
 
@@ -64,7 +67,7 @@ export const loadImage = ({ name, width, height, src }: Resource) => {
       resolve({ name, img: oImg, width, height })
     }
     oImg.onerror = reject
-    oImg.src = src
+    oImg.src = `${pathname}/${src}`
   })
 }
 
