@@ -106,6 +106,12 @@ export class GameObject extends BaseModule {
     // 检测当前对象是否已经空血
     if (this.isDead) {
       context.gameObjects.delete(this.id)
+      // 触发击杀事件
+      // @todo - 此处应该还需要给对象增加一些被击杀奖励列表
+      context.addEvent({
+        type: EventTypes.GAME_OBJECT_DEATH,
+        triggerObject: this
+      })
 
       return
     }
@@ -249,6 +255,10 @@ export class GameObject extends BaseModule {
 
   static isEnemy (gameObject: GameObject) {
     return gameObject.type === GameObjectTypes.ENEMY
+  }
+
+  static isSkill (gameObject: GameObject) {
+    return gameObject.type === GameObjectTypes.SKILL
   }
 }
 

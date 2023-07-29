@@ -5,11 +5,12 @@
  */
 
 import type { Coordinate, ImageResource } from '../../types'
-import { isPointInGameObject, isSkill } from '../../utils/check'
+import { isPointInGameObject } from '../../utils/detect'
 import { drawCrystalAnimation } from '../../utils/draw'
 import { loadImage } from '../../utils/tools'
 import { Renderer } from '../base'
-import type { GameObject } from '../gameObject'
+import type { Context } from '../centralControlSystem'
+import { GameObject } from '../gameObject'
 
 enum EventState {
   DEFAULT,
@@ -58,7 +59,7 @@ export class InteractivePanelRenderer extends Renderer {
     return this.selectedGameObjects[0]
   }
 
-  async init (gameObjects: Map<string, GameObject>) {
+  async init (context: Context) {
     this.crystalResource = await loadImage({
       name: 'crystal',
       width: 32,
@@ -66,7 +67,9 @@ export class InteractivePanelRenderer extends Renderer {
       src: '/crystal.png'
     })
 
-    this.gameObjects = gameObjects
+    this.gameObjects = context.gameObjects
+
+    this.initEvents()
 
     // /** @todo - 测试数据，新增个游戏对象 */
     // const towerGameObject = new TowerGameObject({
@@ -132,7 +135,6 @@ export class InteractivePanelRenderer extends Renderer {
 
   handleMousedown = (e: MouseEvent) => {
     e.preventDefault()
-    console.log(e)
 
     this.button = e.button
 
@@ -206,13 +208,12 @@ export class InteractivePanelRenderer extends Renderer {
       // 2. 用户选中了已建造的塔
       this.getSelectedGameObjects(point)
 
-      if (this.selectedGameObjects.length === 1 && isSkill(this.firstSelectedGameObject)) {
+      if (this.selectedGameObjects.length === 1 && GameObject.isSkill(this.firstSelectedGameObject)) {
         // 当前点击了某个技能
       } else {
+        document.removeEventListener('mousemove', this.handleMousemove)
         document.removeEventListener('mouseup', this.handleMouseup)
       }
-
-      console.log(this.selectedGameObjects)
     } else if (this.button === 2) {
       // 右键点击某个位置
       drawCrystalAnimation(this.crystalResource!, this.ctx, { x: e.clientX, y: e.clientY })

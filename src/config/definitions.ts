@@ -36,7 +36,9 @@ export enum RendererTypes {
   // 统计面板
   STATISTICS_PANEL = 'StatisticsPanel',
   // 科技面板
-  TECHNOLOGY_PANEL = 'TechnologyPanel'
+  TECHNOLOGY_PANEL = 'TechnologyPanel',
+  // 交互面板
+  INTERACTIVE_PANEL = 'InteractivePanel'
 }
 
 export enum ShapeTypes {
@@ -103,4 +105,10 @@ export enum SkillModes {
 export enum Order {
   ASCEND,
   DESCEND
+}
+
+export enum GameStates {
+  PLAYING,
+  PAUSED,
+  FINISHED
 }

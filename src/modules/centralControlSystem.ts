@@ -2,7 +2,7 @@
  * 游戏主控制系统
  */
 
-import { ActionTypes, EventTypes, RendererTypes, ShapeTypes, SkillModes } from '../config'
+import { ActionTypes, EventTypes, GameStates, RendererTypes, ShapeTypes, SkillModes } from '../config'
 import { type EventObject, type ImageResource } from '../types'
 import { copyMidpoint, findNearestGameObjects, loadImage, sleep } from '../utils/tools'
 import { Action } from './action'
@@ -14,6 +14,8 @@ import { Timer } from './Timer'
 import { Skill, Trigger } from './trigger'
 
 export interface Context {
+  state: GameStates
+
   gameObjects: Map<string, GameObject>
   bullets: Map<string, BulletGameObject>
   triggers: Set<Trigger>
@@ -25,6 +27,8 @@ export interface Context {
 
   fps: number
   elapsedTime: number
+  remainingLife: number
+  goldAmount: number
 
   addEvent: (event: EventObject) => void
   deleteEvent: (event: EventObject) => void
@@ -57,6 +61,12 @@ export class CentralControlSystem extends BaseModule {
 
     fps: 1000 / 60,
     elapsedTime: 0,
+    // 剩余生命值，当它为 0 时，游戏结束
+    remainingLife: 100,
+    // 金钱
+    goldAmount: 0,
+
+    state: GameStates.PLAYING,
 
     addEvent (event: EventObject) {
       this.eventPool.push(event)
@@ -88,6 +98,7 @@ export class CentralControlSystem extends BaseModule {
   async init () {
     const enemyModel = await this.loadResources()
 
+    await this.loadTerrains()
     await this.loadTimers()
     await this.loadRenderers()
     await this.loadGameObjects()
@@ -100,6 +111,11 @@ export class CentralControlSystem extends BaseModule {
 
   update () {
     const { context } = this
+
+    if (context.state !== GameStates.PLAYING) {
+      // 游戏结束
+      return
+    }
 
     const eventPool = [...context.eventPool]
 
@@ -126,6 +142,7 @@ export class CentralControlSystem extends BaseModule {
     })
 
     const mainRenderer = context.renderers.get(RendererTypes.MAIN)
+    const statisticsPanelRenderer = context.renderers.get(RendererTypes.STATISTICS_PANEL)
 
     mainRenderer?.clear()
     context.gameObjects.forEach(gameObject => {
@@ -136,7 +153,17 @@ export class CentralControlSystem extends BaseModule {
       mainRenderer?.draw(bullet)
     })
 
-    // console.log(context.gameObjects.size)
+    statisticsPanelRenderer?.update(context)
+  }
+
+  async loadTerrains () {
+    // const terrainRenderer = new TerrainRenderer({
+    //   terrainName: 'default',
+    //   width: 48 * 10,
+    //   height: 48 * 7
+    // })
+
+    // await terrainRenderer.init()
   }
 
   async loadResources () {
@@ -167,7 +194,8 @@ export class CentralControlSystem extends BaseModule {
       ControlPanelRenderer,
       StatisticsPanelRenderer,
       TechnologyPanelRenderer,
-      TerrainRenderer
+      TerrainRenderer,
+      InteractivePanelRenderer
     } = await import('../modules/renderer')
 
     const { renderers } = this.context
@@ -193,12 +221,17 @@ export class CentralControlSystem extends BaseModule {
       width: 48 * 4,
       height: 48 * 4
     })
+    const interactivePanelRenderer = new InteractivePanelRenderer({
+      width: 48 * 14,
+      height: 48 * 8
+    })
 
     renderers.set(RendererTypes.MAIN, mainRenderer)
     renderers.set(RendererTypes.CONTROL_PANEL, controlPanelRenderer)
     renderers.set(RendererTypes.STATISTICS_PANEL, statisticsPanelRenderer)
     renderers.set(RendererTypes.TECHNOLOGY_PANEL, technologyPanelRenderer)
     renderers.set(RendererTypes.TERRAIN, terrainRenderer)
+    renderers.set(RendererTypes.INTERACTIVE_PANEL, interactivePanelRenderer)
 
     const { el } = this
 
@@ -230,8 +263,18 @@ export class CentralControlSystem extends BaseModule {
       top: '192px',
       backgroundColor: '#fff'
     })
+    interactivePanelRenderer.mount(el, {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      zIndex: '999'
+    })
 
-    // await terrainRenderer.init()
+    const { context } = this
+
+    await statisticsPanelRenderer.init(context)
+    await terrainRenderer.init(context)
+    await interactivePanelRenderer.init(context)
   }
 
   async loadGameObjects () {
@@ -248,7 +291,8 @@ export class CentralControlSystem extends BaseModule {
         shapeOptions: {
           midpoint: { x: size * x - size / 2, y: size / 2 },
           width: size,
-          height: size
+          height: size,
+          alpha: 0
         }
       }),
       ...[
@@ -264,7 +308,8 @@ export class CentralControlSystem extends BaseModule {
           shapeOptions: {
             midpoint,
             width: size,
-            height: size
+            height: size,
+            alpha: 0
           }
         })
       }),
@@ -274,7 +319,8 @@ export class CentralControlSystem extends BaseModule {
           midpoint: { x: size * x - size / 2, y: size * y - size / 2 },
           width: size,
           height: size,
-          fillStyle: 'red'
+          fillStyle: 'red',
+          alpha: 0
         }
       }),
 
@@ -296,10 +342,10 @@ export class CentralControlSystem extends BaseModule {
       new TowerGameObject({
         id: 'Tower2',
         shapeOptions: {
-          midpoint: { x: size * 2 + size / 2, y: size * 3 + size / 2 },
+          midpoint: { x: size * 3 + size / 2, y: size * 3 + size / 2 },
           width: size / 2,
           height: size / 2,
-          fillStyle: 'orange'
+          fillStyle: 'brown'
         },
         props: {
           healthPoint: { current: 1000, max: 1000 },
@@ -318,6 +364,7 @@ export class CentralControlSystem extends BaseModule {
     const { triggers, gameObjects } = context
     const inputArea = gameObjects.get('inputArea')!
 
+    // 初始触发器
     triggers.add(new Trigger({
       eventType: EventTypes.GAME_INIT,
       conditions: [],
@@ -356,33 +403,28 @@ export class CentralControlSystem extends BaseModule {
                     basePhysicalDamage: 5,
 
                     onReachTarget: (target) => {
-                      console.log('REACH_TARGET', target, bullet.damageCalculation(target))
                       // target.destroy(context)
                       target.doConsume('healthPoint', bullet.damageCalculation(target), 'decrease')
                     },
 
-                    onCollision: (collisionTarget, bullet) => {
-                      console.log('collision:', collisionTarget, bullet)
+                    onCollision: (_collisionTarget, _bullet) => {
                       // collisionTarget.destroy(context)
                     },
 
-                    onOverTime: (bullet) => {
-                      console.log('overTime')
+                    onOverTime: (_bullet) => {
                       // bullet.destroy(context)
                     },
 
-                    onOverRange: (bullet) => {
-                      console.log('overRange')
+                    onOverRange: (_bullet) => {
                       // bullet.destroy()
                     },
 
                     onAttackUpperLimit: (bullet) => {
-                      console.log('upper limit')
                       bullet.destroy(context)
                     },
 
-                    onTargetDisappear: (bullet) => {
-                      console.log('target dead!')
+                    onTargetDisappear: (_bullet) => {
+                      //
                     }
                   })
 
@@ -408,10 +450,10 @@ export class CentralControlSystem extends BaseModule {
 
               effects: [
                 (target, skill) => {
-                  // 对当前触发目标，以及离它最近的 2 个目标，发一起一攻击（一共3个目标）
+                  // 对当前触发目标，以及离它最近的 1 个目标，发一起一攻击（一共2个目标）
                   const collections = [...context.gameObjects.values()]
                     .filter(gameObject => gameObject !== target && GameObject.isEnemy(gameObject))
-                  const gameObjects = findNearestGameObjects(target, collections, 2)
+                  const gameObjects = findNearestGameObjects(target, collections, 1)
 
                   ;[target, ...gameObjects].forEach(gameObject => {
                     const bullet = new BulletGameObject({
@@ -431,33 +473,27 @@ export class CentralControlSystem extends BaseModule {
                       basePhysicalDamage: 5,
 
                       onReachTarget: (target) => {
-                        console.log('REACH_TARGET', target, bullet.damageCalculation(target))
-                        // target.destroy(context)
                         target.doConsume('healthPoint', bullet.damageCalculation(target), 'decrease')
                       },
 
-                      onCollision: (collisionTarget, bullet) => {
-                        console.log('collision:', collisionTarget, bullet)
-                        // collisionTarget.destroy(context)
+                      onCollision: (_collisionTarget, _bullet) => {
+                        //
                       },
 
-                      onOverTime: (bullet) => {
-                        console.log('overTime')
+                      onOverTime: (_bullet) => {
                         // bullet.destroy(context)
                       },
 
-                      onOverRange: (bullet) => {
-                        console.log('overRange')
+                      onOverRange: (_bullet) => {
                         // bullet.destroy()
                       },
 
                       onAttackUpperLimit: (bullet) => {
-                        console.log('upper limit')
                         bullet.destroy(context)
                       },
 
-                      onTargetDisappear: (bullet) => {
-                        console.log('target dead!')
+                      onTargetDisappear: (_bullet) => {
+                        //
                       }
                     })
 
@@ -479,6 +515,33 @@ export class CentralControlSystem extends BaseModule {
             skill2.init(tower2)
           }
         })
+      ]
+    }))
+
+    // 游戏结束触发器
+    triggers.add(new Trigger({
+      id: 'GameOver',
+      eventType: EventTypes.GAME_OVER,
+      actions: [
+        (_, context) => {
+          alert('game over')
+          context.state = GameStates.FINISHED
+        }
+      ]
+    }))
+
+    // 怪物击杀奖励触发器
+    triggers.add(new Trigger({
+      id: 'RewardForKilling',
+      eventType: EventTypes.GAME_OBJECT_DEATH,
+      conditions: [
+        e => GameObject.isEnemy(e.triggerObject)
+      ],
+      actions: [
+        (_, context) => {
+          // @todo - 这里需要读取奖励列表
+          context.goldAmount += 1
+        }
       ]
     }))
 
@@ -538,11 +601,18 @@ export class CentralControlSystem extends BaseModule {
           e => area === e.targetObject
         ],
         actions: [
-          (...args) => {
-            console.log(args)
-          },
           (e, context) => {
             if (index === sourceArray.length - 1) {
+              // 敌人抵达终点
+              context.remainingLife -= 10
+
+              // 游戏结束
+              if (context.remainingLife <= 0) {
+                context.addEvent({
+                  type: EventTypes.GAME_OVER
+                })
+              }
+
               e.triggerObject.destroy(context)
 
               return false
@@ -568,6 +638,7 @@ export class CentralControlSystem extends BaseModule {
   }
 
   pause () {
+    this.context.state = GameStates.PAUSED
     cancelAnimationFrame(this.requestId)
   }
 }

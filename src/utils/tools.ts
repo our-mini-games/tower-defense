@@ -67,7 +67,7 @@ export const loadImage = ({ name, width, height, src }: Resource) => {
       resolve({ name, img: oImg, width, height })
     }
     oImg.onerror = reject
-    oImg.src = `${pathname}/${src}`
+    oImg.src = `${pathname.replace(/\/$/, '')}${src}`
   })
 }
 

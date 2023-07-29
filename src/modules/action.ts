@@ -64,7 +64,6 @@ export class Action<T extends ActionTypes | unknown = unknown> {
         }
         break
       case ActionTypes.DESTROY:
-        console.log('destroy')
         // @todo
         // if (this.source) {
         //   this.source.destroy()

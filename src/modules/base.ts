@@ -1,5 +1,6 @@
 // import type { GameObjectTypes } from '../config'
 import type { CanvasOptions } from '../types'
+import { type Context } from './centralControlSystem'
 // import type { Action } from './action'
 // import type { Shape } from './shape'
 
@@ -72,10 +73,10 @@ export class Renderer extends BaseCanvas {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  init (..._args: unknown[]) {}
+  init (_context: Context) {}
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  update (..._args: unknown[]) {}
+  update (_context: Context) {}
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   draw (..._args: unknown[]) {}
