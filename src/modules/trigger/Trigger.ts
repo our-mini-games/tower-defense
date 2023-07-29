@@ -40,7 +40,6 @@ export class Trigger {
   }
 
   setState (state: State) {
-    console.log('SET STATE', state)
     this.#state = state
   }
 

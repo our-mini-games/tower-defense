@@ -149,7 +149,6 @@ export class BulletGameObject extends GameObject {
     this.shape.update()
 
     if (this.isOverTime) {
-      console.log('bullet over timer')
       this.onOverTime?.(this)
       this.destroy(context)
 
@@ -157,7 +156,6 @@ export class BulletGameObject extends GameObject {
     }
 
     if (this.isOverRange) {
-      console.log('bullet over range')
       this.onOverRange?.(this)
       this.destroy(context)
 
@@ -165,7 +163,6 @@ export class BulletGameObject extends GameObject {
     }
 
     if (this.isReachTarget) {
-      console.log('bullet reach target')
       this.onReachTarget?.(this.target, this)
       this.destroy(context)
 

@@ -1,6 +1,7 @@
 import type { ImageResource } from '../../types'
 import { loadImages } from '../../utils/tools'
 import { Renderer } from '../base'
+import { type Context } from '../centralControlSystem'
 import type { GameObject } from '../gameObject'
 
 export default class TechnologyPanelRenderer extends Renderer {
@@ -9,7 +10,7 @@ export default class TechnologyPanelRenderer extends Renderer {
   /**
    * @todo 这里的资源加载后期都应统一全局加载
    */
-  async init () {
+  async init (context: Context) {
     this.data = await loadImages([
       {
         name: 'border1',
@@ -24,12 +25,14 @@ export default class TechnologyPanelRenderer extends Renderer {
         height: 48
       }
     ])
+
+    this.update(context)
   }
 
-  draw (gameObjects: Map<string, GameObject>) {
+  update (context: Context) {
     this.clear()
 
-    gameObjects.forEach(gameObject => {
+    context.gameObjects.forEach(gameObject => {
       this.drawAvatar(gameObject)
     })
   }

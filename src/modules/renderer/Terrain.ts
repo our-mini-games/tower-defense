@@ -2,6 +2,7 @@ import { getTerrain, type TerrainSetting } from '../../config'
 import type { CanvasOptions, Coordinate } from '../../types'
 import { loadImages } from '../../utils/tools'
 import { Renderer } from '../base'
+import { type Context } from '../centralControlSystem'
 
 interface TerrainData extends Coordinate {
   size: number
@@ -18,15 +19,16 @@ export default class TerrainRenderer extends Renderer {
     this.terrainName = options.terrainName
   }
 
-  async init () {
+  async init (context: Context) {
     const terrain = await getTerrain(this.terrainName)
 
     this.data = await this.formatTerrain(terrain)
-    this.draw()
+    this.update(context)
   }
 
-  update () {
-    return this.data
+  update (_context: Context) {
+    this.clear()
+    this.draw()
   }
 
   draw () {

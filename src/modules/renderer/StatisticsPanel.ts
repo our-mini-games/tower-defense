@@ -2,6 +2,7 @@ import type { ImageResource } from '../../types'
 import { drawHeart } from '../../utils/draw'
 import { convertSeconds, loadImages } from '../../utils/tools'
 import { Renderer } from '../base'
+import { type Context } from '../centralControlSystem'
 
 /**
  * 统计面板
@@ -23,7 +24,7 @@ export default class StatisticsPanelRenderer extends Renderer {
   /**
    * @todo - 这里加载资源用于测试，后续应统一加载界面资源
    */
-  async init () {
+  async init (context: Context) {
     this.data = await loadImages([
       {
         src: '/gold.svg',
@@ -46,17 +47,19 @@ export default class StatisticsPanelRenderer extends Renderer {
     ctx.fillStyle = '#333'
     ctx.textBaseline = 'middle'
     ctx.font = 'bold 20px Microsoft YaHei'
+
+    this.update(context)
   }
 
-  draw ({
-    elapseTime,
-    restHealth,
+  update ({
+    elapsedTime,
+    remainingLife,
     goldAmount
-  }: StatisticsDrawOptions) {
+  }: Context) {
     this.clear()
 
-    this.drawElapseTime(convertSeconds(elapseTime))
-    this.drawRestHealthBar(restHealth / 100)
+    this.drawElapseTime(convertSeconds(Math.floor(elapsedTime / 1000)))
+    this.drawRemainingLifeBar(remainingLife / 100)
     this.drawGoldAmount(goldAmount)
   }
 
@@ -85,7 +88,7 @@ export default class StatisticsPanelRenderer extends Renderer {
     ctx.closePath()
   }
 
-  drawRestHealthBar (percentage: number) {
+  drawRemainingLifeBar (percentage: number) {
     const {
       ctx,
       width,
@@ -118,7 +121,7 @@ export default class StatisticsPanelRenderer extends Renderer {
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')!
 
-    canvas.width = width
+    canvas.width = width + gap * 4
     canvas.height = height
 
     for (let i = 0; i < 5; i++) {
