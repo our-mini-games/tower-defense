@@ -2,16 +2,17 @@
  * 游戏主控制系统
  */
 
-import { ActionTypes, EventTypes, GameStates, RendererTypes, ShapeTypes, SkillModes } from '../config'
+import { ActionTypes, EventTypes, GameStates, RendererTypes } from '../config'
+import { BuiltInEnemies, BuiltInTowers } from '../config/built-in'
+import { SETTING } from '../config/setting'
 import { type EventObject, type ImageResource } from '../types'
-import { copyMidpoint, findNearestGameObjects, loadImage, sleep } from '../utils/tools'
+import { copyMidpoint, loadImage, sleep } from '../utils/tools'
 import { Action } from './action'
 import { BaseModule, type Renderer } from './base'
-import { AreaGameObject, EnemyGameObject, GameObject, GlobalGameObject, TowerGameObject } from './gameObject'
-import { BulletGameObject } from './gameObject/Bullet'
-import { Shape } from './shape'
+import { AreaGameObject, GameObject, GlobalGameObject, type TowerGameObject } from './gameObject'
+import { type BulletGameObject } from './gameObject/Bullet'
 import { Timer } from './Timer'
-import { Skill, Trigger } from './trigger'
+import { Trigger } from './trigger'
 
 export interface Context {
   state: GameStates
@@ -24,6 +25,8 @@ export interface Context {
   timers: Map<string, any>
   variables: Map<string, any>
   terrains: Map<string, any>
+
+  buildableTowers: Set<TowerGameObject>
 
   fps: number
   elapsedTime: number
@@ -58,6 +61,8 @@ export class CentralControlSystem extends BaseModule {
     timers: new Map<string, Timer>(),
     variables: new Map<string, any>(),
     terrains: new Map<string, any>(),
+
+    buildableTowers: new Set<TowerGameObject>(),
 
     fps: 1000 / 60,
     elapsedTime: 0,
@@ -199,31 +204,32 @@ export class CentralControlSystem extends BaseModule {
     } = await import('../modules/renderer')
 
     const { renderers } = this.context
+    const { chunkSize } = SETTING
 
     const statisticsPanelRenderer = new StatisticsPanelRenderer({
-      width: 48 * 14,
-      height: 48
+      width: chunkSize * 14,
+      height: chunkSize
     })
     const terrainRenderer = new TerrainRenderer({
       terrainName: 'default',
-      width: 48 * 10,
-      height: 48 * 7
+      width: chunkSize * 10,
+      height: chunkSize * 7
     })
     const mainRenderer = new MainRenderer({
-      width: 48 * 10,
-      height: 48 * 7
+      width: chunkSize * 10,
+      height: chunkSize * 7
     })
     const technologyPanelRenderer = new TechnologyPanelRenderer({
-      width: 48 * 4,
-      height: 48 * 3
+      width: chunkSize * 4,
+      height: chunkSize * 2
     })
     const controlPanelRenderer = new ControlPanelRenderer({
-      width: 48 * 4,
-      height: 48 * 4
+      width: chunkSize * 4,
+      height: chunkSize * 5
     })
     const interactivePanelRenderer = new InteractivePanelRenderer({
-      width: 48 * 14,
-      height: 48 * 8
+      width: chunkSize * 14,
+      height: chunkSize * 8
     })
 
     renderers.set(RendererTypes.MAIN, mainRenderer)
@@ -238,30 +244,34 @@ export class CentralControlSystem extends BaseModule {
     statisticsPanelRenderer.mount(el, {
       position: 'absolute',
       inset: '0',
-      backgroundColor: '#fff'
+      backgroundColor: '#fff',
+      border: '1px solid #ddd'
     })
     terrainRenderer.mount(el, {
       position: 'absolute',
       left: '0',
-      top: '48px'
+      top: `${chunkSize}px`
     })
     mainRenderer.mount(el, {
       position: 'absolute',
       left: '0',
-      top: '48px',
-      zIndex: '1'
+      top: `${chunkSize}px`,
+      zIndex: '1',
+      border: '1px solid #ddd'
     })
     technologyPanelRenderer.mount(el, {
       position: 'absolute',
-      left: '480px',
-      top: '48px',
-      backgroundColor: '#fff'
+      left: `${chunkSize * 10}px`,
+      top: `${chunkSize}px`,
+      backgroundColor: '#fff',
+      border: '1px solid #ddd'
     })
     controlPanelRenderer.mount(el, {
       position: 'absolute',
-      left: '480px',
-      top: '192px',
-      backgroundColor: '#fff'
+      left: `${chunkSize * 10}px`,
+      top: `${chunkSize * 3}px`,
+      backgroundColor: '#fff',
+      border: '1px solid #ddd'
     })
     interactivePanelRenderer.mount(el, {
       position: 'absolute',
@@ -274,6 +284,7 @@ export class CentralControlSystem extends BaseModule {
 
     await statisticsPanelRenderer.init(context)
     await terrainRenderer.init(context)
+    await technologyPanelRenderer.init(context)
     await interactivePanelRenderer.init(context)
   }
 
@@ -324,35 +335,10 @@ export class CentralControlSystem extends BaseModule {
         }
       }),
 
-      // 创建一个塔来测试
-      new TowerGameObject({
-        id: 'Tower1',
-        shapeOptions: {
-          midpoint: { x: size + size / 2, y: size + size / 2 },
-          width: size / 2,
-          height: size / 2,
-          fillStyle: 'orange'
-        },
-        props: {
-          healthPoint: { current: 1000, max: 1000 },
-          magicPoint: { current: 1000, max: 1000 },
-          physicalAttack: 100
-        }
-      }),
-      new TowerGameObject({
-        id: 'Tower2',
-        shapeOptions: {
-          midpoint: { x: size * 3 + size / 2, y: size * 3 + size / 2 },
-          width: size / 2,
-          height: size / 2,
-          fillStyle: 'brown'
-        },
-        props: {
-          healthPoint: { current: 1000, max: 1000 },
-          magicPoint: { current: 1000, max: 1000 },
-          physicalAttack: 100
-        }
-      })
+      // 创建塔来测试
+      BuiltInTowers.warrior({ x: size + size / 2, y: size + size / 2 }),
+      BuiltInTowers.archer({ x: size * 3 + size / 2, y: size * 3 + size / 2 }),
+      BuiltInTowers.mega({ x: size * 5 + size / 2, y: size * 3 + size / 2 })
     ].forEach(gameObject => {
       gameObject.init(context)
     })
@@ -373,146 +359,6 @@ export class CentralControlSystem extends BaseModule {
           type: ActionTypes.CREATE,
           target: () => {
             console.log('游戏初始化完成')
-            // 给塔装载技能
-            const tower1 = context.gameObjects.get('Tower1')!
-            const tower2 = context.gameObjects.get('Tower2')!
-
-            const skill1 = new Skill({
-              name: '普通攻击',
-              mode: SkillModes.PASSIVE,
-              range: 100,
-              releaseDuration: 200,
-              cooldown: 1000,
-
-              effects: [
-                (target, skill) => {
-                  const bullet = new BulletGameObject({
-                    target,
-                    owner: skill,
-                    shape: new Shape({
-                      type: ShapeTypes.CIRCLE,
-                      width: 10,
-                      height: 10,
-                      radius: 5,
-                      midpoint: copyMidpoint(skill.owner!),
-                      fillStyle: '#000'
-                    }),
-                    speed: 4,
-                    survivalTime: 1000,
-                    maxRange: 300,
-                    basePhysicalDamage: 5,
-
-                    onReachTarget: (target) => {
-                      // target.destroy(context)
-                      target.doConsume('healthPoint', bullet.damageCalculation(target), 'decrease')
-                    },
-
-                    onCollision: (_collisionTarget, _bullet) => {
-                      // collisionTarget.destroy(context)
-                    },
-
-                    onOverTime: (_bullet) => {
-                      // bullet.destroy(context)
-                    },
-
-                    onOverRange: (_bullet) => {
-                      // bullet.destroy()
-                    },
-
-                    onAttackUpperLimit: (bullet) => {
-                      bullet.destroy(context)
-                    },
-
-                    onTargetDisappear: (_bullet) => {
-                      //
-                    }
-                  })
-
-                  bullet.init(context)
-                }
-              ],
-
-              execSkill: (context, skill) => {
-                context.gameObjects.forEach(gameObject => {
-                  if (GameObject.isEnemy(gameObject)) {
-                    skill.release(gameObject)
-                  }
-                })
-              }
-            })
-
-            const skill2 = new Skill({
-              name: '多重箭',
-              mode: SkillModes.PASSIVE,
-              range: 100,
-              releaseDuration: 200,
-              cooldown: 1000,
-
-              effects: [
-                (target, skill) => {
-                  // 对当前触发目标，以及离它最近的 1 个目标，发一起一攻击（一共2个目标）
-                  const collections = [...context.gameObjects.values()]
-                    .filter(gameObject => gameObject !== target && GameObject.isEnemy(gameObject))
-                  const gameObjects = findNearestGameObjects(target, collections, 1)
-
-                  ;[target, ...gameObjects].forEach(gameObject => {
-                    const bullet = new BulletGameObject({
-                      target: gameObject,
-                      owner: skill,
-                      shape: new Shape({
-                        type: ShapeTypes.CIRCLE,
-                        width: 10,
-                        height: 10,
-                        radius: 5,
-                        midpoint: copyMidpoint(skill.owner!),
-                        fillStyle: '#000'
-                      }),
-                      speed: 4,
-                      survivalTime: 1000,
-                      maxRange: 300,
-                      basePhysicalDamage: 5,
-
-                      onReachTarget: (target) => {
-                        target.doConsume('healthPoint', bullet.damageCalculation(target), 'decrease')
-                      },
-
-                      onCollision: (_collisionTarget, _bullet) => {
-                        //
-                      },
-
-                      onOverTime: (_bullet) => {
-                        // bullet.destroy(context)
-                      },
-
-                      onOverRange: (_bullet) => {
-                        // bullet.destroy()
-                      },
-
-                      onAttackUpperLimit: (bullet) => {
-                        bullet.destroy(context)
-                      },
-
-                      onTargetDisappear: (_bullet) => {
-                        //
-                      }
-                    })
-
-                    bullet.init(context)
-                  })
-                }
-              ],
-
-              execSkill: (context, skill) => {
-                context.gameObjects.forEach(gameObject => {
-                  if (GameObject.isEnemy(gameObject)) {
-                    skill.release(gameObject)
-                  }
-                })
-              }
-            })
-
-            skill1.init(tower1)
-            skill2.init(tower2)
           }
         })
       ]
@@ -556,19 +402,7 @@ export class CentralControlSystem extends BaseModule {
         async (_, context) => {
           // @todo 发兵数量 / 兵种应该由变量控制
           for (let i = 0; i < 20; i++) {
-            const enemy = new EnemyGameObject({
-              shapeOptions: {
-                midpoint: copyMidpoint(inputArea),
-                width: 24,
-                height: 25,
-                fillStyle: 'blue'
-              },
-              props: {
-                speed: 2,
-                healthPoint: { current: 1000, max: 1000 },
-                magicPoint: { current: 1000, max: 1000 }
-              }
-            })
+            const enemy = BuiltInEnemies.a(copyMidpoint(inputArea))
 
             enemy.init(context)
 

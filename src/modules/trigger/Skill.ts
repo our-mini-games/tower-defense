@@ -41,9 +41,16 @@ export interface SkillOptions {
   attackLimit?: number
   releaseDuration?: number
   cooldown?: number
-  consume?: number
+  consume?: ConsumeType
+  attackMultiplier?: number
 
-  effects: Array<(gameObject: GameObject, skill: Skill) => void>
+  /**
+   * 技能效果
+   * @param target - 攻击目标
+   * @param skill - 当前技能
+   * @param context
+   */
+  effects: Array<(targetGameObject: GameObject, context: Context, skill: Skill) => void>
 
   /**
    * 被动技能执行函数
@@ -81,11 +88,10 @@ export class Skill {
   // 技能所有者
   owner: GameObject | null = null
 
-  // 技能效果
-  effects: Array<(target: GameObject, skill: Skill) => void> = []
+  effects: SkillOptions['effects'] = []
 
   // 被动技能触发函数
-  execSkill!: (context: Context, skill: Skill) => void
+  execSkill!: SkillOptions['execSkill']
 
   timer = 0
   startTime = 0
@@ -167,14 +173,14 @@ export class Skill {
     specialConsume?.consumeFn(owner)
   }
 
-  async release (target: GameObject) {
+  async release (target: GameObject, context: Context) {
     if (this.isReleasable(target)) {
       // 1. 技能起手等待
       this.setState(SkillState.RELEASING)
       await sleep(this.releaseDuration)
 
       // 2. 执行技能效果
-      this.effects.forEach(effectFn => { effectFn(target, this) })
+      this.effects.forEach(effectFn => { effectFn(target, context, this) })
 
       // 3. 执行完毕后结算消耗
       this.doConsume()
