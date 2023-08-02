@@ -1,5 +1,6 @@
 import { GameObjectTypes } from '../../config'
 import type { Coordinate } from '../../types'
+import { damageCalculation } from '../../utils/calculation'
 import { isCollision } from '../../utils/detect'
 import { calcHypotenuse, copyMidpoint, createRandomId } from '../../utils/tools'
 import { type Context } from '../centralControlSystem'
@@ -203,19 +204,21 @@ export class BulletGameObject extends GameObject {
 
     if (!owner) return 0
 
-    const physicalDamage = (
-      (owner.props.physicalAttack - target.props.physicalDefense) *
-      basePhysicalDamage *
-      skill.attackMultiplier
+    const physicalDamage = damageCalculation(
+      owner.props.physicalAttack,
+      target.props.physicalDefense,
+      skill.attackMultiplier,
+      basePhysicalDamage
     )
 
-    const magicalDamage = (
-      (owner.props.magicalAttack - target.props.magicalDefense) *
-      baseMagicDamage *
-      skill.attackMultiplier
+    const magicalDamage = damageCalculation(
+      owner.props.magicalAttack,
+      target.props.magicalDefense,
+      skill.attackMultiplier,
+      baseMagicDamage
     )
 
-    return Math.max(0, physicalDamage) + Math.max(magicalDamage)
+    return Math.max(0, physicalDamage) + Math.max(0, magicalDamage)
   }
 
   // 攻击目标死亡的地方

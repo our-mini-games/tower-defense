@@ -121,7 +121,7 @@ export class GameObject extends BaseModule {
 
     // 执行被动执行
     this.skills.forEach(skill => {
-      skill.execSkill(context, skill)
+      skill.execSkill?.(context, skill)
     })
 
     this.shape.update()
