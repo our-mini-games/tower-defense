@@ -1,0 +1,250 @@
+{
+  "id": 1,
+  "name": "Default Map",
+  "description": "default map",
+  "terrains": [
+    ["m-nw", "m-n", "m-n", "m-n", "m-n", "m-n", "m-n", "m-n", "m-n", "m-ne"],
+    ["m-w", "b-c1", "b-c2", "b-c1", "b-c1", "b-c1", "u-s", "u-s", "u-s", "u-el"],
+    ["m-sw", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-ne", "u-e"],
+    ["u-s", "u-s", "u-s", "b-c2", "b-c2", "b-c1", "b-c2", "b-c1", "m-e", "u-e"],
+    ["m-nw", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-se", "u-e"],
+    ["m-w", "b-c1", "b-c2", "b-c1", "b-c2", "b-c1", "u-s", "u-s", "u-s", "u-el"],
+    ["m-sw", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-s", "m-se"]
+  ],
+  "models": {
+    "default": [
+      {
+        "name": "gold",
+        "width": 48,
+        "height": 48,
+        "src": "/gold.svg"
+      },
+      {
+        "name": "hourglass",
+        "width": 48,
+        "height": 48,
+        "src": "/hourglass.svg"
+      },
+      {
+        "name": "crystal",
+        "width": 48,
+        "height": 48,
+        "src": "/crystal.png"
+      },
+      {
+        "name": "border1",
+        "width": 48,
+        "height": 48,
+        "src": "/border1.png"
+      },
+      {
+        "name": "border2",
+        "width": 48,
+        "height": 48,
+        "src": "/border2.png"
+      }
+    ],
+    "terrains": [
+      {
+        "name": "m-nw",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/movable/n-w.png"
+      },
+      {
+        "name": "m-n",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/movable/n.png"
+      },
+      {
+        "name": "m-ne",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/movable/n-e.png"
+      },
+      {
+        "name": "m-w",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/movable/w.png"
+      },
+      {
+        "name": "m-e",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/movable/e.png"
+      },
+      {
+        "name": "m-sw",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/movable/s-w.png"
+      },
+      {
+        "name": "m-s",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/movable/s.png"
+      },
+      {
+        "name": "m-se",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/movable/s-e.png"
+      },
+  
+      {
+        "name": "u-nw",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/nw.svg"
+      },
+      {
+        "name": "u-n",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/n.svg"
+      },
+      {
+        "name": "u-ne",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/ne.svg"
+      },
+      {
+        "name": "u-w",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/w.svg"
+      },
+      {
+        "name": "u-e",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/e.svg"
+      },
+      {
+        "name": "u-sw",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/sw.svg"
+      },
+      {
+        "name": "u-s",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/s.svg"
+      },
+      {
+        "name": "u-se",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/se.svg"
+      },
+  
+      {
+        "name": "u-nl",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/nl.svg"
+      },
+      {
+        "name": "u-el",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/el.svg"
+      },
+      {
+        "name": "u-sl",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/sl.svg"
+      },
+      {
+        "name": "u-wl",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": false,
+        "src": "/terrains/unbuildable/wl.svg"
+      },
+  
+      {
+        "name": "b-c1",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": true,
+        "src": "/terrains/buildable/c-1.png"
+      },
+  
+      {
+        "name": "b-c2",
+        "width": 48,
+        "height": 48,
+        "movable": true,
+        "buildable": true,
+        "src": "/terrains/buildable/c-2.png"
+      }
+    ],
+    "towers": [
+      {
+        "name": "warrior",
+        "width": 108,
+        "height": 108,
+        "src": "/towers/warrior.png"
+      },
+      {
+        "name": "archer",
+        "width": 108,
+        "height": 108,
+        "src": "/towers/archer.png"
+      },
+      {
+        "name": "mage",
+        "width": 108,
+        "height": 108,
+        "src": "/towers/mage.png"
+      }
+    ]
+  }
+}

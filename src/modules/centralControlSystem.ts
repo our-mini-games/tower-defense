@@ -6,11 +6,12 @@ import { ActionTypes, EventTypes, GameStates, RendererTypes } from '../config'
 import { BuiltInEnemies, BuiltInTowers } from '../config/built-in'
 import { SETTING } from '../config/setting'
 import { type EventObject, type ImageResource } from '../types'
-import { copyMidpoint, loadImage, sleep } from '../utils/tools'
+import { copyMidpoint, loadImages, sleep } from '../utils/tools'
 import { Action } from './action'
 import { BaseModule, type Renderer } from './base'
 import { AreaGameObject, GameObject, GlobalGameObject, type TowerGameObject } from './gameObject'
 import { type BulletGameObject } from './gameObject/Bullet'
+import { type TerrainData } from './renderer/Terrain'
 import { Timer } from './Timer'
 import { Trigger } from './trigger'
 
@@ -24,7 +25,9 @@ export interface Context {
   renderers: Map<RendererTypes, Renderer>
   timers: Map<string, any>
   variables: Map<string, any>
-  terrains: Map<string, any>
+  terrains: TerrainData[]
+
+  models: Map<string, ImageResource>
 
   buildableTowers: Set<TowerGameObject>
 
@@ -60,7 +63,8 @@ export class CentralControlSystem extends BaseModule {
     renderers: new Map<RendererTypes, Renderer>(),
     timers: new Map<string, Timer>(),
     variables: new Map<string, any>(),
-    terrains: new Map<string, any>(),
+    terrains: [],
+    models: new Map<string, ImageResource>(),
 
     buildableTowers: new Set<TowerGameObject>(),
 
@@ -100,16 +104,13 @@ export class CentralControlSystem extends BaseModule {
   /**
    * @todo - 所有内容都应该使用地图配置生成，暂时手写
    */
-  async init () {
-    const enemyModel = await this.loadResources()
+  async init (mapName: string) {
+    await this.loadMap(mapName)
 
-    await this.loadTerrains()
     await this.loadTimers()
     await this.loadRenderers()
     await this.loadGameObjects()
-    await this.loadTriggers({
-      enemyModel
-    })
+    await this.loadTriggers()
 
     this.context.addEvent({ type: EventTypes.GAME_INIT })
   }
@@ -161,23 +162,59 @@ export class CentralControlSystem extends BaseModule {
     statisticsPanelRenderer?.update(context)
   }
 
-  async loadTerrains () {
-    // const terrainRenderer = new TerrainRenderer({
-    //   terrainName: 'default',
-    //   width: 48 * 10,
-    //   height: 48 * 7
-    // })
+  async loadMap (mapName: string) {
+    const {
+      terrains,
+      models
+    } = await import(`../config/maps/${mapName}.json`)
 
-    // await terrainRenderer.init()
+    const { context } = this
+    const mapper = new Map<string, ImageResource[]>()
+
+    // 加载模型
+    for (const key in models) {
+      const resources = await loadImages(models[key])
+
+      mapper.set(key, resources)
+      resources.forEach(resource => {
+        context.models.set(resource.name, resource)
+      })
+    }
+
+    // 解析地型
+    context.terrains = await this.loadTerrains(
+      terrains,
+      mapper.get('terrains') as unknown as Array<ImageResource & { movable: boolean, buildable: boolean }>
+    )
   }
 
-  async loadResources () {
-    return await loadImage({
-      name: 'enemy',
-      width: 32,
-      height: 32,
-      src: '/enemy.svg'
-    })
+  async loadTerrains (
+    setting: string[][],
+    models: Array<ImageResource & { movable: boolean, buildable: boolean }> = []
+  ) {
+    if (models.length === 0) {
+      throw new Error('地型文件加载失败：缺少模型配置')
+    }
+
+    const { chunkSize } = SETTING
+
+    return setting.map((list, y) => list.map((name, x) => {
+      const model = models.find(i => i.name === name)
+
+      if (!model) {
+        throw new Error(`地型文件加载失败：缺失模型${name}`)
+      }
+
+      return {
+        model: model.name,
+        midpoint: {
+          x: x * chunkSize + chunkSize / 2,
+          y: y * chunkSize + chunkSize / 2
+        },
+        size: chunkSize,
+        movable: model.movable
+      } as TerrainData
+    })).flat()
   }
 
   async loadTimers () {
@@ -344,8 +381,7 @@ export class CentralControlSystem extends BaseModule {
     })
   }
 
-  // @todo - 临时传递个模型来测试
-  async loadTriggers ({ enemyModel }: { enemyModel: ImageResource }) {
+  async loadTriggers () {
     const { context } = this
     const { triggers, gameObjects } = context
     const inputArea = gameObjects.get('inputArea')!

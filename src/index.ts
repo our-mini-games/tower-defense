@@ -6,7 +6,7 @@ const app = document.querySelector<HTMLElement>('#app')!
 
 const ccs = new CentralControlSystem(app)
 
-ccs.init()
+ccs.init('default')
   .then(() => {
     ccs.run()
   })
