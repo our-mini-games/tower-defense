@@ -1,11 +1,13 @@
+import { BuiltInTowers } from '../../config/built-in'
 import type { ImageResource } from '../../types'
 import { loadImages } from '../../utils/tools'
 import { Renderer } from '../base'
 import { type Context } from '../centralControlSystem'
-import type { GameObject } from '../gameObject'
+import type { GameObject, TowerGameObject } from '../gameObject'
 
 export default class TechnologyPanelRenderer extends Renderer {
   data: ImageResource[] = []
+  towers: TowerGameObject[] = []
 
   /**
    * @todo 这里的资源加载后期都应统一全局加载
@@ -26,15 +28,13 @@ export default class TechnologyPanelRenderer extends Renderer {
       }
     ])
 
+    this.towers = Object.values(BuiltInTowers).map(tower => tower({ x: 0, y: 0 }))
+
     this.update(context)
   }
 
-  update (context: Context) {
+  update (_context: Context) {
     this.clear()
-
-    context.gameObjects.forEach(gameObject => {
-      this.drawAvatar(gameObject)
-    })
   }
 
   drawAvatar (gameObject: GameObject) {
